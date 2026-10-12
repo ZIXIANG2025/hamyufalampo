@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f6fb">
+    <title>SafeDocs · PDF 隐私保护</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --ink: #17243a;
+            --muted: #71809a;
+            --line: #e3e9f2;
+            --blue: #3868f5;
+            --blue-dark: #244bd1;
+            --paper: #ffffff;
+            --canvas: #f4f6fb;
+            --green: #168568;
+            --red: #bd3c4a;
+            font-family: Inter, "Segoe UI", "Microsoft YaHei", sans-serif;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--ink);
+            background:
+                radial-gradient(ellipse at 12% 2%, rgba(83, 123, 255, .12), transparent 31rem),
+                radial-gradient(ellipse at 95% 32%, rgba(55, 183, 153, .08), transparent 25rem),
+                var(--canvas);
+        }
+        button, input { font: inherit; }
+        .shell { width: min(1080px, calc(100% - 40px)); margin: 0 auto; }
+        header { height: 82px; display: flex; align-items: center; justify-content: space-between; }
+        .brand { display: flex; align-items: center; gap: 11px; font-weight: 750; letter-spacing: -.035em; font-size: 19px; }
+        .brand-mark { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; color: white; background: var(--blue); box-shadow: 0 6px 16px #3868f54a; }
+        .brand-mark svg { width: 20px; height: 20px; }
+        .local-tag { display: flex; align-items: center; gap: 8px; color: #557064; font-size: 12px; font-weight: 650; padding: 9px 12px; border: 1px solid #dcebe5; border-radius: 999px; background: #f8fcfa; }
+        .local-dot { width: 7px; height: 7px; border-radius: 50%; background: #21a17c; box-shadow: 0 0 0 3px #21a17c1c; }
+        main { padding: 48px 0 70px; }
+        .intro { max-width: 700px; margin: 0 auto 34px; text-align: center; }
+        .eyebrow { margin: 0 0 13px; color: var(--blue); font-size: 11px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+        h1 { margin: 0; font-size: clamp(34px, 5vw, 53px); letter-spacing: -.055em; line-height: 1.08; }
+        .subtitle { max-width: 540px; margin: 16px auto 0; color: var(--muted); font-size: 15px; line-height: 1.75; }
+        .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 18px; align-items: start; }
+        .panel { border: 1px solid var(--line); border-radius: 18px; background: var(--paper); box-shadow: 0 15px 45px rgba(38, 58, 96, .055); }
+        .upload-panel { padding: 25px; }
+        .section-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 17px; }
+        .section-heading h2, .side-panel h2 { margin: 0; font-size: 15px; letter-spacing: -.02em; }
+        .step { display: inline-grid; width: 23px; height: 23px; place-items: center; margin-right: 8px; color: var(--blue); background: #edf2ff; border-radius: 8px; font-size: 11px; font-weight: 800; vertical-align: 1px; }
+        .file-hint { color: #99a4b6; font-size: 11px; }
+        .dropzone { min-height: 226px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 25px; border: 1.5px dashed #c9d4e5; border-radius: 14px; background: linear-gradient(145deg, #fbfcff, #f7f9ff); text-align: center; cursor: pointer; transition: .18s ease; }
+        .dropzone:hover, .dropzone.dragging { border-color: var(--blue); background: #f2f6ff; transform: translateY(-1px); }
+        .upload-icon { width: 52px; height: 52px; display: grid; place-items: center; color: var(--blue); background: #e9efff; border-radius: 17px; }
+        .upload-icon svg { width: 24px; height: 24px; }
+        .drop-title { margin: 15px 0 5px; font-size: 14px; font-weight: 700; }
+        .drop-caption { color: var(--muted); font-size: 12px; }
+        .browse-link { color: var(--blue); font-weight: 700; }
+        .file-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+        .file-card { width: min(100%, 390px); display: none; align-items: center; gap: 11px; margin-top: 17px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 11px; background: white; text-align: left; }
+        .file-badge { width: 34px; height: 38px; display: grid; place-items: center; flex: 0 0 auto; color: #e45b5b; border-radius: 8px; background: #fff0ef; font-size: 10px; font-weight: 850; }
+        .file-info { min-width: 0; flex: 1; }
+        .file-name { overflow: hidden; font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+        .file-size { margin-top: 4px; color: var(--muted); font-size: 10px; }
+        .remove-file { border: 0; color: #8692a5; background: transparent; cursor: pointer; font-size: 18px; }
+        .policies { margin-top: 25px; }
+        .policy-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+        .policy-option { position: relative; }
+        .policy-option input { position: absolute; opacity: 0; }
+        .policy-option label { min-height: 80px; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #fff; cursor: pointer; transition: .16s ease; }
+        .policy-option input:checked + label { border-color: #9db4ff; background: #f4f7ff; box-shadow: inset 0 0 0 1px #d6e0ff; }
+        .policy-option input:focus-visible + label { outline: 3px solid #3868f555; outline-offset: 2px; }
+        .policy-title { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 750; }
+        .policy-icon { color: var(--blue); font-size: 15px; }
+        .policy-description { color: var(--muted); font-size: 10px; line-height: 1.45; }
+        .action-row { display: flex; align-items: center; gap: 14px; margin-top: 20px; }
+        .submit-button { min-height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; padding: 0 19px; border: 0; border-radius: 11px; color: white; background: var(--blue); box-shadow: 0 8px 16px #3868f52c; cursor: pointer; font-size: 13px; font-weight: 750; transition: .16s ease; }
+        .submit-button:hover:not(:disabled) { background: var(--blue-dark); transform: translateY(-1px); }
+        .submit-button:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+        .submit-button svg { width: 16px; height: 16px; }
+        .action-note { color: #98a3b4; font-size: 10px; }
+        .spinner { display: none; width: 15px; height: 15px; border: 2px solid #ffffff66; border-top-color: white; border-radius: 50%; animation: spin .7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .side-panel { padding: 22px; }
+        .side-panel h2 { margin-bottom: 18px; }
+        .feature { display: grid; grid-template-columns: 33px 1fr; gap: 11px; margin-bottom: 17px; }
+        .feature-icon { width: 32px; height: 32px; display: grid; place-items: center; color: var(--blue); background: #eef2ff; border-radius: 10px; }
+        .feature-icon svg { width: 16px; height: 16px; }
+        .feature-title { margin: 1px 0 4px; font-size: 11px; font-weight: 750; }
+        .feature-copy { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.55; }
+        .privacy-note { display: flex; gap: 9px; margin-top: 20px; padding: 12px; border: 1px solid #e1eee8; border-radius: 11px; background: #f7fbf8; }
+        .privacy-note svg { width: 16px; height: 16px; flex: 0 0 auto; color: var(--green); }
+        .privacy-note p { margin: 0; color: #637c70; font-size: 10px; line-height: 1.6; }
+        .result { display: none; margin-top: 16px; padding: 13px 15px; border: 1px solid; border-radius: 11px; font-size: 12px; line-height: 1.55; }
+        .result.success { display: block; color: #12694f; border-color: #cdebe0; background: #f3fbf7; }
+        .result.error { display: block; color: var(--red); border-color: #f0d3d6; background: #fff7f7; }
+        .result a { display: inline-block; margin-top: 7px; color: inherit; font-weight: 750; }
+        footer { padding: 0 0 25px; color: #9aa5b6; text-align: center; font-size: 10px; }
+        @media (max-width: 760px) {
+            main { padding-top: 29px; }
+            .workspace { grid-template-columns: 1fr; }
+            .side-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 17px; }
+            .side-panel h2 { grid-column: 1 / -1; margin-bottom: 2px; }
+            .feature { margin-bottom: 2px; }
+            .privacy-note { grid-column: 1 / -1; margin-top: 4px; }
+        }
+        @media (max-width: 480px) {
+            .shell { width: min(100% - 24px, 600px); }
+            header { height: 67px; }
+            .local-tag { padding: 8px 9px; font-size: 10px; }
+            .intro { margin-bottom: 23px; }
+            .subtitle { font-size: 13px; }
+            .upload-panel { padding: 17px; }
+            .dropzone { min-height: 205px; }
+            .policy-list { grid-template-columns: 1fr; }
+            .policy-option label { min-height: 61px; }
+            .side-panel { grid-template-columns: 1fr; }
+            .side-panel h2, .privacy-note { grid-column: auto; }
+            .action-row { align-items: flex-start; flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="shell">
+    <header>
+        <div class="brand">
+            <div class="brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M7 3.75h7l4 4v12.5H7a2 2 0 0 1-2-2v-12.5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7"/><path d="M14 4v4h4M8.5 12.25h7M8.5 15.75h7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            </div>
+            SafeDocs
+        </div>
+        <div class="local-tag"><span class="local-dot"></span> 本地安全处理</div>
+    </header>
+
+    <main>
+        <section class="intro">
+            <p class="eyebrow">PRIVATE DOCUMENT WORKSPACE</p>
+            <h1>让敏感信息，<br>到此为止。</h1>
+            <p class="subtitle">上传 PDF，选择要清除的个人信息。SafeDocs 会从文档中移除匹配内容，并在提供下载前再次检查结果。</p>
+        </section>
+
+        <div class="workspace">
+            <section class="panel upload-panel" aria-label="PDF 隐私清理">
+                <div class="section-heading">
+                    <h2><span class="step">1</span>添加 PDF 文件</h2>
+                    <span class="file-hint">最大 20 MB</span>
+                </div>
+                <input class="file-input" id="fileInput" type="file" accept="application/pdf,.pdf">
+                <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="选择或拖放 PDF 文件">
+                    <div class="upload-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none"><path d="M12 15.5V4.75m0 0L8.25 8.5M12 4.75l3.75 3.75M5.5 14.25v3.5a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <p class="drop-title">将 PDF 拖放到这里</p>
+                    <p class="drop-caption">或 <span class="browse-link">浏览文件</span> 选择文档</p>
+                    <div class="file-card" id="fileCard">
+                        <div class="file-badge">PDF</div>
+                        <div class="file-info"><div class="file-name" id="fileName"></div><div class="file-size" id="fileSize"></div></div>
+                        <button class="remove-file" id="removeFile" type="button" aria-label="移除文件">×</button>
+                    </div>
+                </div>
+
+                <div class="policies">
+                    <div class="section-heading">
+                        <h2><span class="step">2</span>选择清理内容</h2>
+                        <span class="file-hint">可多选</span>
+                    </div>
+                    <div class="policy-list">
+                        <div class="policy-option"><input id="policy-mykad" type="checkbox" name="policies" value="MYKAD" checked><label for="policy-mykad"><span class="policy-title"><span class="policy-icon">▤</span>身份证号码</span><span class="policy-description">马来西亚 MyKad 身份证号码</span></label></div>
+                        <div class="policy-option"><input id="policy-phone" type="checkbox" name="policies" value="PHONE" checked><label for="policy-phone"><span class="policy-title"><span class="policy-icon">⌕</span>电话号码</span><span class="policy-description">马来西亚手机号码格式</span></label></div>
+                        <div class="policy-option"><input id="policy-email" type="checkbox" name="policies" value="EMAIL" checked><label for="policy-email"><span class="policy-title"><span class="policy-icon">✉</span>电子邮箱</span><span class="policy-description">常见电子邮件地址</span></label></div>
+                    </div>
+                </div>
+
+                <div class="action-row">
+                    <button class="submit-button" id="submitButton" type="button" disabled>
+                        <span class="spinner" id="spinner"></span>
+                        <svg id="submitIcon" viewBox="0 0 24 24" fill="none"><path d="M12 3.75v10.5m0 0 4-4m-4 4-4-4M5 15.75v3a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <span id="buttonText">安全清理并下载</span>
+                    </button>
+                    <span class="action-note">仅在脱敏验证通过后提供文件</span>
+                </div>
+                <div class="result" id="result" role="status" aria-live="polite"></div>
+            </section>
+
+            <aside class="panel side-panel">
+                <h2>安全处理流程</h2>
+                <div class="feature"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5 19 6v5.1c0 4.25-2.8 7.65-7 9.4-4.2-1.75-7-5.15-7-9.4V6l7-2.5Z" stroke="currentColor" stroke-width="1.6"/><path d="m9 11.8 2 2 4-4.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><p class="feature-title">内容实际移除</p><p class="feature-copy">清除 PDF 中匹配的文字内容，不只是覆盖一层色块。</p></div></div>
+                <div class="feature"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M5 6.5h14M7.5 6.5v11a1.5 1.5 0 0 0 1.5 1.5h6a1.5 1.5 0 0 0 1.5-1.5v-11M9.5 10v5.5M14.5 10v5.5M9 6.5V4.75h6V6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><p class="feature-title">文档信息同步清理</p><p class="feature-copy">移除 PDF 标题、作者、主题等常见元数据。</p></div></div>
+                <div class="feature"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4.5 12a7.5 7.5 0 1 1 2.2 5.3M4.5 17v-4h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8.5v3.75l2.5 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><p class="feature-title">下载前再次验证</p><p class="feature-copy">重新读取处理后的 PDF，检查所选类别是否仍有残留。</p></div></div>
+                <div class="privacy-note"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5 19 6v5.1c0 4.25-2.8 7.65-7 9.4-4.2-1.75-7-5.15-7-9.4V6l7-2.5Z" stroke="currentColor" stroke-width="1.6"/><path d="m9 11.8 2 2 4-4.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><p>文件通过本机 SafeDocs 服务处理。请在下载后自行确认文档内容符合你的使用需求。</p></div>
+            </aside>
+        </div>
+    </main>
+    <footer>SafeDocs · PDF Privacy Workspace</footer>
+</div>
+<script>
+    const input = document.getElementById('fileInput');
+    const dropzone = document.getElementById('dropzone');
+    const fileCard = document.getElementById('fileCard');
+    const submitButton = document.getElementById('submitButton');
+    const result = document.getElementById('result');
+    const maxFileSize = 20 * 1024 * 1024;
+    let selectedFile = null;
+
+    function formatSize(bytes) {
+        return bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(0)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+    }
+
+    function setFile(file) {
+        result.className = 'result';
+        result.textContent = '';
+        if (!file) {
+            selectedFile = null;
+            fileCard.style.display = 'none';
+            submitButton.disabled = true;
+            return;
+        }
+        if (!file.name.toLowerCase().endsWith('.pdf') || (file.type && file.type !== 'application/pdf')) {
+            showError('请选择 PDF 文件。');
+            input.value = '';
+            return;
+        }
+        if (file.size > maxFileSize) {
+            showError('文件超过 20 MB，请选择较小的 PDF。');
+            input.value = '';
+            return;
+        }
+        selectedFile = file;
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileSize').textContent = formatSize(file.size);
+        fileCard.style.display = 'flex';
+        submitButton.disabled = false;
+    }
+
+    function showError(message) {
+        result.className = 'result error';
+        result.textContent = message;
+    }
+
+    function setLoading(loading) {
+        submitButton.disabled = loading || !selectedFile;
+        document.getElementById('spinner').style.display = loading ? 'inline-block' : 'none';
+        document.getElementById('submitIcon').style.display = loading ? 'none' : 'block';
+        document.getElementById('buttonText').textContent = loading ? '正在安全处理…' : '安全清理并下载';
+    }
+
+    function filenameFromHeader(header, fallback) {
+        if (!header) return fallback;
+        const encoded = header.match(/filename\*=UTF-8''([^;]+)/i);
+        if (encoded) {
+            try { return decodeURIComponent(encoded[1].replace(/^"|"$/g, '')); } catch (_) { /* use plain filename */ }
+        }
+        const plain = header.match(/filename="?([^";]+)"?/i);
+        return plain ? plain[1] : fallback;
+    }
+
+    dropzone.addEventListener('click', (event) => {
+        if (event.target.closest('#removeFile')) return;
+        if (!selectedFile) input.click();
+    });
+    dropzone.addEventListener('keydown', (event) => {
+        if ((event.key === 'Enter' || event.key === ' ') && !selectedFile) {
+            event.preventDefault();
+            input.click();
+        }
+    });
+    input.addEventListener('change', () => setFile(input.files[0] || null));
+    document.getElementById('removeFile').addEventListener('click', (event) => {
+        event.stopPropagation();
+        input.value = '';
+        setFile(null);
+    });
+    for (const name of ['dragenter', 'dragover']) {
+        dropzone.addEventListener(name, (event) => { event.preventDefault(); dropzone.classList.add('dragging'); });
+    }
+    for (const name of ['dragleave', 'drop']) {
+        dropzone.addEventListener(name, (event) => { event.preventDefault(); dropzone.classList.remove('dragging'); });
+    }
+    dropzone.addEventListener('drop', (event) => setFile(event.dataTransfer.files[0] || null));
+
+    submitButton.addEventListener('click', async () => {
+        if (!selectedFile) return;
+        const policies = [...document.querySelectorAll('input[name="policies"]:checked')].map((item) => item.value);
+        if (!policies.length) {
+            showError('请至少选择一种需要清理的信息类型。');
+            return;
+        }
+        const form = new FormData();
+        form.append('file', selectedFile);
+        policies.forEach((policy) => form.append('policies', policy));
+        result.className = 'result';
+        setLoading(true);
+        try {
+            const response = await fetch('/api/safedocs/process', { method: 'POST', body: form });
+            if (!response.ok) {
+                const message = await response.text();
+                throw new Error(message || `处理失败（HTTP ${response.status}）`);
+            }
+            const blob = await response.blob();
+            const filename = filenameFromHeader(response.headers.get('Content-Disposition'), `Secure_${selectedFile.name}`);
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+            result.className = 'result success';
+            result.textContent = '脱敏和验证已完成，安全 PDF 已开始下载。';
+        } catch (error) {
+            showError(error.message || '无法连接 SafeDocs 服务，请确认后端正在运行后重试。');
+        } finally {
+            setLoading(false);
+        }
+    });
+</script>
+</body>
+</html>
