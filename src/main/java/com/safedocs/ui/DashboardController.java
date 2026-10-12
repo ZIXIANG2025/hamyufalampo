@@ -1,8 +1,11 @@
 package com.safedocs.ui;
 
 import com.safedocs.detection.Policies;
+import com.safedocs.detection.PiiDetector;
+import com.safedocs.detection.AiDetectionException;
 import com.safedocs.redaction.PdfRedactor;
 import com.safedocs.verification.PdfVerifier;
+import com.safedocs.document.PdfTextExtractorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -21,11 +24,18 @@ import java.util.List;
 @RequestMapping("/api/safedocs")
 public class DashboardController {
 
-    @Autowired
-    private PdfRedactor redactor;
+    private final PdfRedactor redactor;
+    private final PdfVerifier verifier;
+    private final PdfTextExtractorService textExtractor;
+    private final PiiDetector detector;
 
-    @Autowired
-    private PdfVerifier verifier;
+    public DashboardController(PdfRedactor redactor, PdfVerifier verifier,
+                               PdfTextExtractorService textExtractor, PiiDetector detector) {
+        this.redactor = redactor;
+        this.verifier = verifier;
+        this.textExtractor = textExtractor;
+        this.detector = detector;
+    }
 
     @PostMapping("/process")
     public ResponseEntity<?> processDocument(
@@ -50,19 +60,27 @@ public class DashboardController {
                 if (value == null || value.isBlank()) {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Policy names cannot be blank.");
                 }
-                try {
-                    Policies policy = Policies.valueOf(value.trim().toUpperCase(java.util.Locale.ROOT));
-                    if (!policies.contains(policy)) {
-                        policies.add(policy);
-                    }
-                } catch (IllegalArgumentException exception) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported PII policy: " + value);
+                if (!value.trim().matches("PERSONAL|CONTACT|FINANCIAL|SENSITIVE")) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported AI detection category.");
+                }
+                if (!policies.contains(Policies.AI_PII)) {
+                    policies.add(Policies.AI_PII);
                 }
             }
+            if (policies.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Select at least one AI detection category.");
+            }
 
-            // Redact the PDF, then verify that selected PII patterns are absent.
+            // Reject PDFs without extractable text. This app doesn't yet run local OCR on scanned/image PDFs.
             byte[] rawBytes = file.getBytes();
-            byte[] redactedBytes = redactor.applyRedaction(rawBytes, policies);
+            String originalText = textExtractor.extractText(rawBytes);
+            if (originalText.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "No extractable text was found. Scanned/image PDFs require a local OCR engine before processing.");
+            }
+            // Detect all PII semantically, then redact and independently verify before returning a PDF.
+            var detectedEntities = detector.analyzeText(originalText, policies);
+            byte[] redactedBytes = redactor.applyRedaction(rawBytes, policies, detectedEntities);
             boolean isSecure = verifier.verifyIntegrity(redactedBytes, policies);
             if (!isSecure) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -80,6 +98,11 @@ public class DashboardController {
 
         } catch (ResponseStatusException exception) {
             throw exception;
+        } catch (AiDetectionException exception) {
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(exception.getMessage());
+        } catch (java.io.IOException exception) {
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .body("Secure processing or independent verification could not complete. No output file was returned.");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Unable to process the uploaded PDF. Ensure the file is valid and not password-protected.");

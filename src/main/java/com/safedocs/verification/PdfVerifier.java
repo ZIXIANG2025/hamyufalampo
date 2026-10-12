@@ -3,6 +3,7 @@ package com.safedocs.verification;
 import com.safedocs.core.PiiEntity;
 import com.safedocs.detection.PiiDetector;
 import com.safedocs.detection.Policies;
+import com.safedocs.detection.AiDetectionException;
 import com.safedocs.document.PdfTextExtractorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,7 +29,12 @@ public class PdfVerifier {
         String extractedText = extractor.extractText(redactedPdfBytes);
 
         // 2. 让 AI 引擎重新检查
-        List<PiiEntity> remainingEntities = detector.analyzeText(extractedText, checkedPolicies);
+        List<PiiEntity> remainingEntities;
+        try {
+            remainingEntities = detector.analyzeText(extractedText, checkedPolicies);
+        } catch (AiDetectionException e) {
+            throw new IOException("Independent AI verification did not complete; the output must not be released.", e);
+        }
 
         // 3. 如果结果为空，说明底层字符被彻底摧毁，验证通过
         return remainingEntities.isEmpty();

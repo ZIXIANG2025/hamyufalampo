@@ -39,6 +39,11 @@
             <artifactId>cleanup</artifactId>
             <version>${cleanup.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.itextpdf</groupId>
+            <artifactId>layout</artifactId>
+            <version>8.0.5</version>
+        </dependency>
     </dependencies>
 
     <build>

@@ -1,5 +1,6 @@
 ### IntelliJ IDEA ###
 .idea/
+.run/
 *.iml
 out/
 !**/src/main/**/out/
