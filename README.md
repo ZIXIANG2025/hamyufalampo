@@ -1,18 +1,15 @@
 # SafeDocs
 
-**AI Secured: Innovation Without Exposure. Powerful AI. Protected Data.**
-
-SafeDocs identifies personal and sensitive information in PDF text using contextual AI, removes it from the PDF content stream, then performs a second AI scan before returning the result. Detection does not depend on regular expressions or fixed identity formats. AI predictions are accepted only when the returned text is an exact verbatim span from the original document; PDF text geometry is then used to select the irreversible cleanup regions.
+SafeDocs extracts text from text-based PDFs, uses context-aware AI detection for the selected sensitive-data categories, and replaces detected spans with consistent reversible tokens. Tokenized and restored PDF downloads retain the uploaded PDF pages, graphics, and layout while replacing the selected text in place. Sanitized text can also be copied to an external AI service.
 
 ## Privacy model
 
-- PDF extraction, positional mapping, redaction, metadata cleanup and output verification run in the SafeDocs Spring Boot process.
-- AI analysis sends extracted text to the configured model endpoint. This default cloud configuration is **not** local-only or end-to-end private; do not use sensitive documents with a provider unless its terms and retention controls meet your requirements.
-- For a private deployment, configure `SAFEDOCS_AI_CUSTOM_BASE_URL` to an OpenAI Responses API-compatible model endpoint operated within your trusted environment, and provision its API key only through an environment variable. The service intentionally does not persist uploaded files, document text, model responses, or API keys.
-- Provider request/response bodies and document content are excluded from application error messages. AI detection is disabled unless explicitly enabled.
-- Scanned/image-only PDFs are rejected because this version does not yet include a local OCR engine. PDF text extraction cannot detect information present only in page images.
-- The independent output scan uses the configured AI service again. If a scan request fails, the output file is not delivered.
-- Original document Info fields and XMP metadata are replaced before the output is written, including custom Info keys. The text scan does not inspect text drawn inside images or arbitrary embedded content; use only PDFs whose contents you understand.
+- PDF text extraction and token generation run in the SafeDocs Spring Boot process. The PDF and token mapping are not persisted by the application.
+- AI detection sends extracted document text to the configured model endpoint. A cloud endpoint receives that text; use a trusted private endpoint for sensitive documents.
+- The token mapping contains the original sensitive values. It is returned to the local browser and held in page memory. For layout-preserving PDF output, the browser sends the selected PDF and mapping only to this local SafeDocs service; they are not sent to the AI provider during PDF substitution. Refreshing or closing the page clears the in-memory key.
+- The downloaded JSON key is plaintext and must be protected like the original document. Token substitution is reversible pseudonymization, not cryptographic encryption.
+- Scanned/image-only PDFs are rejected because this version does not include an OCR engine.
+- Provider request/response bodies and document content are excluded from application logs.
 
 ## Requirements
 
@@ -33,7 +30,7 @@ $env:SAFEDOCS_AI_ENABLED = "true"
 .\mvnw.cmd spring-boot:run
 ```
 
-The `custom` provider uses the OpenAI Responses API and the configured model. To use OpenAI's hosted endpoint, set `SAFEDOCS_AI_PROVIDER` to `openai` after reviewing the provider's current data-handling terms for your use case.
+The `custom` provider uses an OpenAI Responses API-compatible endpoint. To use OpenAI's hosted endpoint, set `SAFEDOCS_AI_PROVIDER` to `openai` after reviewing its current data-handling terms for your use case.
 
 ## Run with Gemini
 
@@ -46,31 +43,16 @@ $env:SAFEDOCS_AI_ENABLED = "true"
 
 Set `GEMINI_MODEL` and `GEMINI_BASE_URL` to select an available model and endpoint. Keep keys out of source control and logs.
 
-The dashboard runs at `http://localhost:8080`. Select one or more semantic categories, upload a text-based PDF (maximum 20 MB), and download the output after the second scan succeeds.
+## Workflow
 
-## API
+1. Choose a text-based PDF.
+2. Select the sensitive categories for context-aware detection.
+3. Tokenize the extracted text. The service returns sanitized text and a one-time mapping to the local page. Downloading the tokenized PDF removes sensitive glyphs from the original page and draws the token at that position, preserving the rest of the page design.
+4. Copy the sanitized text to an external AI service if desired.
+5. Save the external AI report as a PDF and select it in the restore panel with the in-memory key or a locally loaded JSON key. Downloading the restored report replaces tokens inside that uploaded PDF while preserving its page design.
 
-`POST /api/safedocs/process` accepts a multipart PDF `file` and one or more `policies` values:
-
-- `PERSONAL`
-- `CONTACT`
-- `FINANCIAL`
-- `SENSITIVE`
-
-The selected categories communicate user intent; the AI scans the document for all supported personal and sensitive entity types, which are then redacted from the extracted PDF text.
-
-```shell
-curl.exe -X POST http://localhost:8080/api/safedocs/process `
-  -F "file=@input.pdf" `
-  -F "policies=PERSONAL" `
-  -F "policies=FINANCIAL" `
-  --output Secure_input.pdf
-```
+The dashboard runs at `http://localhost:8080`. PDF substitution uses the local routes `POST /api/safedocs/tokenize-pdf` and `POST /api/safedocs/restore-pdf`; the `mapping` field is submitted only to the local application.
 
 ## iText licensing
 
 iText is distributed under AGPLv3 or a commercial license. Review the license terms that apply to your use before distributing or deploying this application.
-
-## Tests
-
-Run `sh ./mvnw test` on macOS/Linux or `.\mvnw.cmd test` on Windows. The tests cover the OpenAI Responses request format, privacy-safe provider errors, Unicode and page-aware text mapping, fail-closed verification, and PDF redaction with metadata cleanup.

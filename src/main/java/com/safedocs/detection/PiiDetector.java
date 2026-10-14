@@ -4,6 +4,8 @@ import com.safedocs.core.PiiEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class PiiDetector {
@@ -15,9 +17,12 @@ public class PiiDetector {
     }
 
     public List<PiiEntity> analyzeText(String text, List<Policies> activePolicies) {
-        if (activePolicies == null || !activePolicies.contains(Policies.AI_PII)) {
+        if (activePolicies == null || activePolicies.isEmpty()) {
             return List.of();
         }
-        return aiPiiDetector.detect(text);
+        Set<Policies> selected = Set.copyOf(activePolicies);
+        return aiPiiDetector.detect(text).stream()
+                .filter(entity -> selected.stream().anyMatch(policy -> policy.includes(entity.getEntityType())))
+                .collect(Collectors.toList());
     }
 }
