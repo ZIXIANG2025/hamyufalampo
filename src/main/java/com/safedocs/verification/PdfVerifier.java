@@ -5,30 +5,37 @@ import com.safedocs.detection.PiiDetector;
 import com.safedocs.detection.Policies;
 import com.safedocs.detection.AiDetectionException;
 import com.safedocs.document.PdfTextExtractorService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class PdfVerifier {
 
-    @Autowired
-    private PdfTextExtractorService extractor;
+    private final PdfTextExtractorService extractor;
+    private final PiiDetector detector;
 
-    @Autowired
-    private PiiDetector detector;
+    public PdfVerifier(PdfTextExtractorService extractor, PiiDetector detector) {
+        this.extractor = extractor;
+        this.detector = detector;
+    }
 
     /**
-     * 验证脱敏后的 PDF 是否还残留敏感信息
-     * @return true 表示安全 (0个敏感词)，false 表示泄露
+     * Return true only when known matches are gone and an independent AI scan finds no more.
      */
-    public boolean verifyIntegrity(byte[] redactedPdfBytes, List<Policies> checkedPolicies) throws IOException {
-        // 1. 尝试从脱敏后的文件中再次提取文字
+    public boolean verifyIntegrity(byte[] redactedPdfBytes, List<Policies> checkedPolicies,
+                                   List<PiiEntity> originalEntities) throws IOException {
         String extractedText = extractor.extractText(redactedPdfBytes);
+        String normalizedOutput = normalize(extractedText);
+        for (PiiEntity entity : originalEntities) {
+            String match = entity.getMatchedText();
+            if (match != null && !match.isBlank() && normalizedOutput.contains(normalize(match))) {
+                return false;
+            }
+        }
 
-        // 2. 让 AI 引擎重新检查
         List<PiiEntity> remainingEntities;
         try {
             remainingEntities = detector.analyzeText(extractedText, checkedPolicies);
@@ -36,7 +43,10 @@ public class PdfVerifier {
             throw new IOException("Independent AI verification did not complete; the output must not be released.", e);
         }
 
-        // 3. 如果结果为空，说明底层字符被彻底摧毁，验证通过
         return remainingEntities.isEmpty();
+    }
+
+    private String normalize(String text) {
+        return text.replaceAll("\s+", "").toLowerCase(Locale.ROOT);
     }
 }
