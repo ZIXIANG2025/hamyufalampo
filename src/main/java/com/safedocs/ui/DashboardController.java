@@ -86,7 +86,7 @@ public class DashboardController {
                         .body("Security Check Failed: PII leakage detected in output file.");
             }
 
-            String safeFilename = originalFilename.replaceAll("[\\/\r\n\"]", "_");
+            String safeFilename = originalFilename.replaceAll("[\\\\/\\r\\n\\\"]", "_");
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
             headers.setContentDisposition(ContentDisposition.attachment()
