@@ -12,6 +12,7 @@ SafeDocs identifies personal and sensitive information in PDF text using context
 - Provider request/response bodies and document content are excluded from application error messages. AI detection is disabled unless explicitly enabled.
 - Scanned/image-only PDFs are rejected because this version does not yet include a local OCR engine. PDF text extraction cannot detect information present only in page images.
 - The independent output scan uses the configured AI service again. If a scan request fails, the output file is not delivered.
+- Original document Info fields and XMP metadata are replaced before the output is written, including custom Info keys. The text scan does not inspect text drawn inside images or arbitrary embedded content; use only PDFs whose contents you understand.
 
 ## Requirements
 
@@ -69,3 +70,7 @@ curl.exe -X POST http://localhost:8080/api/safedocs/process `
 ## iText licensing
 
 iText is distributed under AGPLv3 or a commercial license. Review the license terms that apply to your use before distributing or deploying this application.
+
+## Tests
+
+Run `sh ./mvnw test` on macOS/Linux or `.\mvnw.cmd test` on Windows. The tests cover the OpenAI Responses request format, privacy-safe provider errors, Unicode and page-aware text mapping, fail-closed verification, and PDF redaction with metadata cleanup.
