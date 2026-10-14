@@ -56,7 +56,29 @@
     let selectedFile=null;
     function formatSize(bytes){return bytes<1048576?`${(bytes/1024).toFixed(0)} KB`:`${(bytes/1048576).toFixed(1)} MB`}
     function showError(message){result.className='result error';result.textContent=message}
-    function setFile(file){result.className='result';result.textContent='';if(!file){selectedFile=null;fileCard.style.display='none';submitButton.disabled=true;return}if(!file.name.toLowerCase().endsWith('.pdf')||(file.type&&file.type!=='application/pdf')){showError('Please choose a PDF file.');input.value='';return}if(file.size>maxFileSize){showError('This file exceeds 20 MB. Choose a smaller PDF.');input.value='';return}selectedFile=file;document.getElementById('fileName').textContent=file.name;document.getElementById('fileSize').textContent=formatSize(file.size);fileCard.style.display='flex';submitButton.disabled=false}
+    function setFile(file) {
+      result.className='result';
+      result.textContent='';
+      selectedFile=null;
+      fileCard.style.display='none';
+      submitButton.disabled=true;
+      if (!file) return;
+      if (!file.name.toLowerCase().endsWith('.pdf') || (file.type && file.type!=='application/pdf')) {
+        showError('Please choose a PDF file.');
+        input.value='';
+        return;
+      }
+      if (file.size===0 || file.size>maxFileSize) {
+        showError(file.size===0 ? 'Please choose a non-empty PDF file.' : 'This file exceeds 20 MB. Choose a smaller PDF.');
+        input.value='';
+        return;
+      }
+      selectedFile=file;
+      document.getElementById('fileName').textContent=file.name;
+      document.getElementById('fileSize').textContent=formatSize(file.size);
+      fileCard.style.display='flex';
+      submitButton.disabled=false;
+    }
     function setLoading(loading){submitButton.disabled=loading||!selectedFile;document.getElementById('spinner').style.display=loading?'inline-block':'none';document.getElementById('submitIcon').style.display=loading?'none':'block';document.getElementById('buttonText').textContent=loading?'AI is securely processing…':'Redact & download securely'}
     function filenameFromHeader(header,fallback){if(!header)return fallback;const encoded=header.match(/filename\*=UTF-8''([^;]+)/i);if(encoded){try{return decodeURIComponent(encoded[1].replace(/^"|"$/g,''))}catch(_){}}const plain=header.match(/filename="?([^";]+)"?/i);return plain?plain[1]:fallback}
     dropzone.addEventListener('click',event=>{if(event.target.closest('#removeFile'))return;if(!selectedFile)input.click()});dropzone.addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&!selectedFile){event.preventDefault();input.click()}});input.addEventListener('change',()=>setFile(input.files[0]||null));document.getElementById('removeFile').addEventListener('click',event=>{event.stopPropagation();input.value='';setFile(null)});for(const name of ['dragenter','dragover'])dropzone.addEventListener(name,event=>{event.preventDefault();dropzone.classList.add('dragging')});for(const name of ['dragleave','drop'])dropzone.addEventListener(name,event=>{event.preventDefault();dropzone.classList.remove('dragging')});dropzone.addEventListener('drop',event=>setFile(event.dataTransfer.files[0]||null));
