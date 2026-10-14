@@ -6,7 +6,6 @@ import com.safedocs.detection.AiDetectionException;
 import com.safedocs.redaction.PdfRedactor;
 import com.safedocs.verification.PdfVerifier;
 import com.safedocs.document.PdfTextExtractorService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -81,13 +80,13 @@ public class DashboardController {
             // Detect all PII semantically, then redact and independently verify before returning a PDF.
             var detectedEntities = detector.analyzeText(originalText, policies);
             byte[] redactedBytes = redactor.applyRedaction(rawBytes, policies, detectedEntities);
-            boolean isSecure = verifier.verifyIntegrity(redactedBytes, policies);
+            boolean isSecure = verifier.verifyIntegrity(redactedBytes, policies, detectedEntities);
             if (!isSecure) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("Security Check Failed: PII leakage detected in output file.");
             }
 
-            String safeFilename = originalFilename.replaceAll("[\\\\/\\r\\n\\\"]", "_");
+            String safeFilename = originalFilename.replaceAll("[\\/\r\n\"]", "_");
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
             headers.setContentDisposition(ContentDisposition.attachment()
