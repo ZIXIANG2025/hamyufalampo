@@ -157,9 +157,8 @@ public class AiPiiDetector {
                 case 500, 502, 503, 504 -> "The provider is temporarily unavailable.";
                 default -> "Check the provider endpoint and account configuration.";
             };
-            String providerMessage = safeProviderErrorMessage(exception.getResponseBodyAsString());
-            String detail = providerMessage == null ? "" : " Provider detail: " + providerMessage;
-            throw new AiDetectionException("AI provider returned HTTP " + status + ". " + hint + detail);
+            // Provider error bodies may echo submitted document text. Never return them to callers.
+            throw new AiDetectionException("AI provider returned HTTP " + status + ". " + hint);
         } catch (org.springframework.web.client.ResourceAccessException exception) {
             Throwable cause = exception.getMostSpecificCause();
             if (cause instanceof SocketTimeoutException || cause instanceof HttpConnectTimeoutException) {
@@ -240,10 +239,9 @@ public class AiPiiDetector {
     private ObjectNode createOpenAiFormat() {
         ObjectNode format = objectMapper.createObjectNode();
         format.put("type", "json_schema");
-        ObjectNode schema = format.putObject("json_schema");
-        schema.put("name", "pii_entities");
-        schema.put("strict", true);
-        schema.set("schema", createEntitySchema());
+        format.put("name", "pii_entities");
+        format.put("strict", true);
+        format.set("schema", createEntitySchema());
         ObjectNode text = objectMapper.createObjectNode();
         text.set("format", format);
         return text;
@@ -290,27 +288,6 @@ public class AiPiiDetector {
         item.putArray("required").add("type").add("text");
         schema.putArray("required").add("entities");
         return schema;
-    }
-
-    private String safeProviderErrorMessage(String responseBody) {
-        if (responseBody == null || responseBody.isBlank()) {
-            return null;
-        }
-        try {
-            JsonNode error = objectMapper.readTree(responseBody).path("error");
-            String message = error.path("message").asText("").trim();
-            if (message.isBlank()) {
-                return null;
-            }
-            // Provider errors can echo request text. Only expose the short structured error,
-            // never the full response body or submitted PDF text.
-            if (message.length() > 240) {
-                message = message.substring(0, 240) + "…";
-            }
-            return message.replaceAll("[\\r\\n\\t]+", " ");
-        } catch (Exception ignored) {
-            return null;
-        }
     }
 
     private String extractOpenAiText(JsonNode response) {
