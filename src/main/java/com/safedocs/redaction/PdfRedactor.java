@@ -3,8 +3,11 @@ package com.safedocs.redaction;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfDictionary;
+import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.xmp.XMPException;
 import com.itextpdf.pdfcleanup.PdfCleanUpLocation;
 import com.itextpdf.pdfcleanup.PdfCleaner;
 import com.safedocs.core.PiiEntity;
@@ -35,9 +38,15 @@ public class PdfRedactor {
         }
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
+        List<String> sourceInfoKeys = sourceInfoKeys(fileBytes);
         try (PdfDocument pdf = new PdfDocument(
                 new PdfReader(new ByteArrayInputStream(fileBytes)), new PdfWriter(output))) {
-            MetadataSanitizer.clean(pdf);
+            pdf.setFlushUnusedObjects(true);
+            try {
+                MetadataSanitizer.clean(pdf, sourceInfoKeys);
+            } catch (XMPException exception) {
+                throw new IOException("PDF metadata could not be sanitized. No output file was returned.", exception);
+            }
 
             List<PdfCleanUpLocation> locations = new ArrayList<>();
             List<PdfTextSpan> sourceSpans = textLocator.locateAll(pdf);
@@ -71,31 +80,34 @@ public class PdfRedactor {
         return output.toByteArray();
     }
 
-    private List<PdfTextSpan> locateExactMatches(List<PdfTextSpan> sourceSpans, String target) {
+    private List<String> sourceInfoKeys(byte[] fileBytes) throws IOException {
+        try (PdfDocument source = new PdfDocument(new PdfReader(new ByteArrayInputStream(fileBytes)))) {
+            PdfDictionary info = source.getTrailer().getAsDictionary(PdfName.Info);
+            return info == null ? List.of() : info.keySet().stream().map(PdfName::getValue).toList();
+        }
+    }
+
+    List<PdfTextSpan> locateExactMatches(List<PdfTextSpan> sourceSpans, String target) {
         List<PdfTextSpan> matches = new ArrayList<>();
         String normalizedTarget = normalize(target);
-        List<String> normalizedCharacters = new ArrayList<>();
-        List<PdfTextSpan> characters = new ArrayList<>();
-        for (PdfTextSpan span : sourceSpans) {
-            String normalized = normalize(span.text());
-            for (int offset = 0; offset < normalized.length(); ) {
-                int codePoint = normalized.codePointAt(offset);
-                String character = new String(Character.toChars(codePoint));
-                normalizedCharacters.add(character);
-                characters.add(span);
-                offset += Character.charCount(codePoint);
-            }
+        if (normalizedTarget.isEmpty()) {
+            return matches;
         }
 
-        StringBuilder text = new StringBuilder();
-        normalizedCharacters.forEach(text::append);
-        for (int start = 0; start < characters.size(); ) {
-            int pageNumber = characters.get(start).pageNumber();
-            int pageEnd = start + 1;
-            while (pageEnd < characters.size() && characters.get(pageEnd).pageNumber() == pageNumber) {
-                pageEnd++;
+        for (int start = 0; start < sourceSpans.size(); ) {
+            int pageNumber = sourceSpans.get(start).pageNumber();
+            StringBuilder pageText = new StringBuilder();
+            List<PdfTextSpan> characterSpans = new ArrayList<>();
+            int pageEnd = start;
+            while (pageEnd < sourceSpans.size() && sourceSpans.get(pageEnd).pageNumber() == pageNumber) {
+                PdfTextSpan span = sourceSpans.get(pageEnd++);
+                String normalized = normalize(span.text());
+                pageText.append(normalized);
+                // String.indexOf uses UTF-16 offsets, so each code unit needs a matching span.
+                for (int i = 0; i < normalized.length(); i++) {
+                    characterSpans.add(span);
+                }
             }
-            String pageText = text.substring(start, pageEnd);
             int matchStart = 0;
             while (matchStart < pageText.length()) {
                 int occurrence = pageText.indexOf(normalizedTarget, matchStart);
@@ -104,7 +116,10 @@ public class PdfRedactor {
                 }
                 int matchEnd = occurrence + normalizedTarget.length();
                 for (int i = occurrence; i < matchEnd; i++) {
-                    matches.add(characters.get(start + i));
+                    PdfTextSpan span = characterSpans.get(i);
+                    if (i == occurrence || span != characterSpans.get(i - 1)) {
+                        matches.add(span);
+                    }
                 }
                 matchStart = matchEnd;
             }
