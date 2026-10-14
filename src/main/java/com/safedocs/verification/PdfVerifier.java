@@ -47,6 +47,6 @@ public class PdfVerifier {
     }
 
     private String normalize(String text) {
-        return text.replaceAll("\s+", "").toLowerCase(Locale.ROOT);
+        return text.replaceAll("\\s+", "").toLowerCase(Locale.ROOT);
     }
 }
