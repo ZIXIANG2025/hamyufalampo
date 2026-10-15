@@ -1,0 +1,24 @@
+/* Extend the existing palette, cards, rounded controls and shadows. */
+[hidden] { display: none !important; }
+button, summary, textarea, input { outline-offset: 3px; }
+button:focus-visible, summary:focus-visible, textarea:focus-visible { outline: 3px solid #3567f544; }
+.action { flex-wrap: wrap; }
+.submit { padding: 12px 18px; }
+.outputs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-top: 22px; }
+.output-card, .restored-card { min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: 15px; background: #fbfdff; box-shadow: 0 8px 24px #20395808; }
+h3 { margin: 0 0 10px; font-size: 13px; line-height: 1.5; }
+.field-help { font-size: 11px; line-height: 1.65; color: var(--muted); margin: 8px 0 14px; }
+.text-output { font: 12px/1.75 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; overflow: auto; max-height: 340px; margin: 12px 0 16px; }
+.secondary { padding: 10px 12px; border: 1px solid #c9d5ef; border-radius: 10px; background: #f4f7ff; color: #234fd2; font-size: 11px; font-weight: 700; cursor: pointer; }
+.secondary:hover:not(:disabled) { background: #eaf0ff; }
+.secondary:disabled { opacity: .52; cursor: not-allowed; }
+summary { cursor: pointer; font-size: 12px; font-weight: 650; padding: 8px 0; color: var(--blue); }
+details { margin-bottom: 16px; }
+.restore-section { margin-top: 26px; padding-top: 25px; border-top: 1px solid var(--line); }
+.field-label { display: block; font-size: 12px; font-weight: 650; margin: 16px 0 9px; }
+textarea { display: block; width: 100%; resize: vertical; min-height: 145px; border: 1px solid #bac9db; border-radius: 12px; padding: 14px; background: #fbfdff; color: #16253b; font: inherit; font-size: 13px; line-height: 1.7; }
+#keyInput { max-width: 100%; font-size: 12px; color: var(--muted); }
+#keyInput::file-selector-button { padding: 9px 12px; margin-right: 10px; border: 1px solid #c9d5ef; border-radius: 9px; background: #f4f7ff; color: #234fd2; cursor: pointer; }
+.restored-card { margin-top: 18px; border-color: #cdebe0; background: #f3fbf7; }
+.restored-card h3 { color: #12694f; }
+@media (max-width: 980px) and (min-width: 761px), (max-width: 560px) { .outputs { grid-template-columns: 1fr; } }
