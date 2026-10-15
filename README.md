@@ -1,76 +1,91 @@
-# SafeDocs
+# SafeDocs — local reversible tokenization
 
-**AI Secured: Innovation Without Exposure. Powerful AI. Protected Data.**
+SafeDocs extracts PDF text, uses a local context-aware model to identify selected sensitive categories, and replaces detected values with consistent tokens such as `[NAME_001]`, `[IC_001]`, `[MATRIC_001]` and `[GENDER_001]`. Copy the sanitized text into your external AI, then paste its report into SafeDocs to restore identities locally.
 
-SafeDocs identifies personal and sensitive information in PDF text using contextual AI, removes it from the PDF content stream, then performs a second AI scan before returning the result. Detection does not depend on regular expressions or fixed identity formats. AI predictions are accepted only when the returned text is an exact verbatim span from the original document; PDF text geometry is then used to select the irreversible cleanup regions.
+The original PDF is not modified. There is no PDF redaction or processed-PDF download feature. The UI's **Encrypt/Decrypt** labels describe reversible tokenization, **not cryptographic encryption**. The JSON key contains the original sensitive values in plain text.
 
-## Privacy model
+## Run locally
 
-- PDF extraction, positional mapping, redaction, metadata cleanup and output verification run in the SafeDocs Spring Boot process.
-- AI analysis sends extracted text to the configured model endpoint. This default cloud configuration is **not** local-only or end-to-end private; do not use sensitive documents with a provider unless its terms and retention controls meet your requirements.
-- For a private deployment, configure `SAFEDOCS_AI_CUSTOM_BASE_URL` to an OpenAI Responses API-compatible model endpoint operated within your trusted environment, and provision its API key only through an environment variable. The service intentionally does not persist uploaded files, document text, model responses, or API keys.
-- Provider request/response bodies and document content are excluded from application error messages. AI detection is disabled unless explicitly enabled.
-- Scanned/image-only PDFs are rejected because this version does not yet include a local OCR engine. PDF text extraction cannot detect information present only in page images.
-- The independent output scan uses the configured AI service again. If a scan request fails, the output file is not delivered.
-- Original document Info fields and XMP metadata are replaced before the output is written, including custom Info keys. The text scan does not inspect text drawn inside images or arbitrary embedded content; use only PDFs whose contents you understand.
+Requirements: JDK 17+, Maven or the included wrapper, and a local model server supporting **`POST /responses` with strict `text.format` JSON schema output**. A chat-completions-only server needs a compatible adapter; no model or adapter is bundled.
 
-## Requirements
+macOS/Linux (replace the port and model name with your local server's values):
 
-- JDK 17 or later
-- Maven (or the included Maven wrapper)
-- A configured OpenAI-compatible API or Gemini API when using AI detection
-
-## Run with an OpenAI-compatible endpoint
+```sh
+export SAFEDOCS_AI_ENABLED=true
+export SAFEDOCS_AI_CUSTOM_BASE_URL=http://127.0.0.1:1234/v1
+export SAFEDOCS_AI_MODEL=your-local-model
+# Optional, only if your local server requires authentication:
+# export SAFEDOCS_AI_API_KEY=your-local-server-key
+sh ./mvnw spring-boot:run
+```
 
 PowerShell:
 
 ```powershell
-$env:OPENAI_API_KEY = "your-key"
-$env:SAFEDOCS_AI_CUSTOM_BASE_URL = "https://your-private-endpoint/v1"
-$env:OPENAI_MODEL = "your-model"
-$env:SAFEDOCS_AI_PROVIDER = "custom"
 $env:SAFEDOCS_AI_ENABLED = "true"
+$env:SAFEDOCS_AI_CUSTOM_BASE_URL = "http://127.0.0.1:1234/v1"
+$env:SAFEDOCS_AI_MODEL = "your-local-model"
 .\mvnw.cmd spring-boot:run
 ```
 
-The `custom` provider uses the OpenAI Responses API and the configured model. To use OpenAI's hosted endpoint, set `SAFEDOCS_AI_PROVIDER` to `openai` after reviewing the provider's current data-handling terms for your use case.
+Open `http://127.0.0.1:8080`. Detection is disabled until explicitly enabled and configured. Hosted OpenAI/Gemini provider settings from previous versions are removed. Model requests allow only literal loopback addresses (`127.0.0.1` or `[::1]`), bypass system proxies, and do not follow redirects. Configure the local model server itself to run locally without forwarding requests or logging sensitive text.
 
-## Run with Gemini
+## Workflow
 
-```powershell
-$env:GEMINI_API_KEY = "your-key"
-$env:SAFEDOCS_AI_PROVIDER = "gemini"
-$env:SAFEDOCS_AI_ENABLED = "true"
-.\mvnw.cmd spring-boot:run
-```
+1. Choose a text-based PDF, up to 20 MB.
+2. Select the categories to tokenize and click **Tokenize & generate safe text (Encrypt)**.
+3. Review **Sanitized Text for External AI**, then copy it. Ask your external AI to preserve all tokens exactly, including brackets, type and number.
+4. Keep the **Local Key Mapping Dictionary** private. Its preview is collapsed initially; **Download Local Key (JSON)** saves a plain JSON dictionary.
+5. Paste the AI report into **3 Decrypt & Restore AI Analysis** and click **Decrypt & Restore Identity**. Restoration uses the dictionary in memory or an optional imported JSON key. Copy the restored report when ready.
 
-Set `GEMINI_MODEL` and `GEMINI_BASE_URL` to select an available model and endpoint. Keep keys out of source control and logs.
+Changing the PDF or selected categories clears the previous output, key and report. A new tokenization replaces the current key. Invalid key imports clear the previous key rather than silently using it. **Clear local session** removes the current file selection, text, key and report from application state; it does not erase copies already downloaded or placed on the clipboard. Refreshing/closing the page loses the in-memory key, so download it if needed later.
 
-The dashboard runs at `http://localhost:8080`. Select one or more semantic categories, upload a text-based PDF (maximum 20 MB), and download the output after the second scan succeeds.
+## Selected categories and token types
+
+| Card | Types |
+| --- | --- |
+| People & identity | NAME, IC, MATRIC, GENDER, PASSPORT, IDENTIFIER, SIGNATURE |
+| Contact & location | PHONE, EMAIL, ADDRESS, LOCATION |
+| Financial data | BANK_ACCOUNT, CARD, TAX, FINANCIAL |
+| Other sensitive data | DATE_OF_BIRTH, MEDICAL, OTHER |
+
+Category choices constrain both the model instruction and response schema. Only exact verbatim source values are accepted. Repeated identical values use one token within a document. Distinct spellings, spacing or capitalization remain distinct values so restoration preserves the original text exactly. Token numbering restarts per document. If the model classifies the same exact value more than once, its first classification wins.
+
+The engine matches literal values at Unicode word boundaries so `Ann` does not alter `Anna`, or `male` alter `female`. Longer contained spans take precedence. Partially intersecting spans are combined into an `OTHER` token covering their full union, preserving the exact original substring without exposing an overlapping tail. Existing token-shaped strings are reserved to avoid accidental restoration collisions. Restoration is a single pass: original values that themselves look like tokens are never expanded recursively. Unknown tokens are left intact and counted for review.
+
+## Privacy and limits
+
+- PDF extraction and detection run on your machine. Uploaded PDFs are held in memory; accepted multipart uploads do not spool to disk. The application does not persist keys, original text, model results or uploaded PDFs, or include them in application error messages. OS memory/swap and model-server logging are outside these application guarantees.
+- The server returns the sanitized text and dictionary once, with `Cache-Control: no-store`. It retains no shared dictionary or HTTP session. The browser keeps the dictionary in a module variable, not cookies, localStorage or sessionStorage.
+- Key import, report restoration and JSON downloads run entirely in the browser and make no server/model requests. Restored text is rendered as text, so document/report HTML is not executed.
+- AI can miss sensitive values. Unselected categories remain visible. Review output before copying it to an external AI; tokenized text still conveys context and may remain identifying.
+- Only extractable PDF text is processed, with a default limit of 100,000 characters. Scans and images require local OCR first. No PDF/image/metadata output is produced or sanitized, and the original document remains sensitive.
+- Long documents use overlapping model chunks. Detection quality depends on the local model and the available context. The integration tests use a synthetic local HTTP model fixture, not a real LLM accuracy evaluation.
+- Keys are limited to 2 MB / 10,000 entries; reports to 1,000,000 characters. JSON maps exact tokens to nonempty strings. Keep each key with its matching report: unrelated documents can both contain `[NAME_001]`, and a plain dictionary cannot authenticate which report it belongs to.
 
 ## API
 
-`POST /api/safedocs/process` accepts a multipart PDF `file` and one or more `policies` values:
+`POST /api/safedocs/tokenize` accepts multipart `file` and one or more repeated `policies` fields (`PERSONAL`, `CONTACT`, `FINANCIAL`, `SENSITIVE`). It returns JSON:
 
-- `PERSONAL`
-- `CONTACT`
-- `FINANCIAL`
-- `SENSITIVE`
-
-The selected categories communicate user intent; the AI scans the document for all supported personal and sensitive entity types, which are then redacted from the extracted PDF text.
-
-```shell
-curl.exe -X POST http://localhost:8080/api/safedocs/process `
-  -F "file=@input.pdf" `
-  -F "policies=PERSONAL" `
-  -F "policies=FINANCIAL" `
-  --output Secure_input.pdf
+```json
+{
+  "sanitizedText": "[NAME_001] has student number [MATRIC_001].",
+  "mapping": {"[NAME_001]": "Alice Tan", "[MATRIC_001]": "A12345"},
+  "replacementCount": 2
+}
 ```
 
-## iText licensing
-
-iText is distributed under AGPLv3 or a commercial license. Review the license terms that apply to your use before distributing or deploying this application.
+Errors return a status code and `{"message":"..."}` without document text or model response bodies. The old `POST /api/safedocs/process` endpoint has been removed. There is no decrypt API: restoration stays in the browser.
 
 ## Tests
 
-Run `sh ./mvnw test` on macOS/Linux or `.\mvnw.cmd test` on Windows. The tests cover the OpenAI Responses request format, privacy-safe provider errors, Unicode and page-aware text mapping, fail-closed verification, and PDF redaction with metadata cleanup.
+```sh
+sh ./mvnw clean verify
+node --test src/test/js/*.test.mjs
+```
+
+Java tests cover real PDF extraction, category enforcement, local-only requests, invalid model results, error privacy, token consistency, collisions, overlaps and the removed endpoint. JavaScript tests cover imported key validation and exact, nonrecursive restoration. GitHub Actions runs both suites (JDK 17 and Node 22).
+
+## iText licensing
+
+iText's PDF kernel remains for text extraction. iText is distributed under AGPLv3 or a commercial license. Use the license appropriate to your distribution. The PDF cleanup and layout dependencies have been removed.
