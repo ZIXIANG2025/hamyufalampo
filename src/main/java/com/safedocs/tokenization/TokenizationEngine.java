@@ -17,6 +17,10 @@ import java.util.regex.Pattern;
 public class TokenizationEngine {
 
     public TokenizedDocument tokenize(String sourceText, List<PiiEntity> entities) {
+        return tokenize(sourceText, entities, "");
+    }
+
+    public TokenizedDocument tokenize(String sourceText, List<PiiEntity> entities, String tokenNamespace) {
         if (sourceText == null || sourceText.isEmpty() || entities == null || entities.isEmpty()) {
             return new TokenizedDocument(sourceText == null ? "" : sourceText, Map.of(), 0);
         }
@@ -41,11 +45,12 @@ public class TokenizationEngine {
             String token = tokenByEntity.get(key);
             if (token == null) {
                 String category = tokenCategory(type);
+                String namespacedCategory = category + (tokenNamespace == null ? "" : tokenNamespace);
                 int number = counters.getOrDefault(category, 0) + 1;
-                token = formatToken(category, number);
+                token = formatToken(namespacedCategory, number);
                 while (sourceText.contains(token) || mapping.containsKey(token)) {
                     number++;
-                    token = formatToken(category, number);
+                    token = formatToken(namespacedCategory, number);
                 }
                 counters.put(category, number);
                 tokenByEntity.put(key, token);
@@ -77,23 +82,23 @@ public class TokenizationEngine {
 
     private String tokenCategory(String type) {
         return switch (type) {
-            case "PERSON" -> "NAME";
-            case "MYKAD", "IC" -> "IC";
-            case "MATRIC", "STUDENT_ID" -> "MATRIC";
-            case "GENDER" -> "GENDER";
-            case "PASSPORT" -> "PASSPORT";
-            case "BANK_ACCOUNT" -> "BANK_ACCOUNT";
-            case "CREDIT_CARD" -> "CARD";
-            case "TAX_ID" -> "TAX_ID";
-            case "DATE_OF_BIRTH" -> "DOB";
-            case "PHONE" -> "PHONE";
-            case "EMAIL" -> "EMAIL";
-            case "ADDRESS" -> "ADDRESS";
-            case "FINANCIAL" -> "FINANCIAL";
-            case "MEDICAL" -> "MEDICAL";
-            case "SIGNATURE" -> "SIGNATURE";
-            case "IDENTIFIER" -> "IDENTIFIER";
-            default -> "SENSITIVE";
+            case "PERSON" -> "N";
+            case "MYKAD", "IC" -> "I";
+            case "MATRIC", "STUDENT_ID" -> "M";
+            case "GENDER" -> "G";
+            case "PASSPORT" -> "P";
+            case "BANK_ACCOUNT" -> "B";
+            case "CREDIT_CARD" -> "C";
+            case "TAX_ID" -> "T";
+            case "DATE_OF_BIRTH" -> "D";
+            case "PHONE" -> "H";
+            case "EMAIL" -> "E";
+            case "ADDRESS" -> "A";
+            case "FINANCIAL" -> "F";
+            case "MEDICAL" -> "V";
+            case "SIGNATURE" -> "S";
+            case "IDENTIFIER" -> "R";
+            default -> "X";
         };
     }
 

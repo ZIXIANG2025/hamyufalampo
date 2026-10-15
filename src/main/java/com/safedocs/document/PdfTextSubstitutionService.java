@@ -6,6 +6,10 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+import com.itextpdf.kernel.font.PdfFont;
+import com.itextpdf.kernel.font.PdfFontFactory;
+import com.itextpdf.io.font.PdfEncodings;
+import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.pdfcleanup.PdfCleanUpLocation;
 import com.itextpdf.pdfcleanup.PdfCleaner;
 import org.springframework.stereotype.Service;
@@ -13,18 +17,30 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.Base64;
+import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /** Replaces PDF text in place while retaining the source pages and their visual content. */
 @Service
 public class PdfTextSubstitutionService {
     private static final float CLEANUP_PADDING = 1.5f;
+    private static final String TOKEN_LOCATION_INFO = "SafeDocsTokenLocationsV1";
     private final PdfTextLocator locator;
 
     public PdfTextSubstitutionService(PdfTextLocator locator) {
@@ -32,13 +48,28 @@ public class PdfTextSubstitutionService {
     }
 
     public byte[] substitute(byte[] sourcePdf, Map<String, String> substitutions) throws IOException {
+        return substitute(sourcePdf, substitutions, true);
+    }
+
+    /**
+     * Restore documents may contain only a subset of the saved tokens (for example, an AI report).
+     * In that case replace every matching token and require at least one match overall.
+     */
+    public byte[] substitute(byte[] sourcePdf, Map<String, String> substitutions, boolean requireAllTargets) throws IOException {
+        return substitute(sourcePdf, substitutions, requireAllTargets, null);
+    }
+
+    public byte[] substitute(byte[] sourcePdf, Map<String, String> substitutions,
+                             boolean requireAllTargets, String documentId) throws IOException {
         if (sourcePdf == null || sourcePdf.length == 0) throw new IOException("The source PDF is empty.");
         if (substitutions == null || substitutions.isEmpty()) return sourcePdf;
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         try (PdfDocument pdf = new PdfDocument(new PdfReader(new ByteArrayInputStream(sourcePdf)), new PdfWriter(output))) {
             List<PdfTextSpan> spans = locator.locateAll(pdf);
-            List<Replacement> replacements = locateReplacements(spans, substitutions);
+            // Locate the complete token from its rendered characters. Stored bounds from older
+            // files may end before the final token glyph (especially when the token was scaled).
+            List<Replacement> replacements = locateReplacements(spans, substitutions, requireAllTargets);
             if (replacements.isEmpty()) throw new IOException("No replacement text could be located in the PDF.");
 
             List<PdfCleanUpLocation> cleanups = new ArrayList<>();
@@ -55,15 +86,114 @@ public class PdfTextSubstitutionService {
             }
             PdfCleaner.cleanUp(pdf, cleanups);
 
-            for (Replacement replacement : replacements) drawReplacement(pdf, replacement);
+            Map<String, PdfFont> fallbackFonts = new HashMap<>();
+            for (Replacement replacement : replacements) drawReplacement(pdf, replacement, fallbackFonts);
+            if (requireAllTargets && documentId != null && !documentId.isBlank()) {
+                pdf.getDocumentInfo().setMoreInfo(TOKEN_LOCATION_INFO,
+                        writeTokenLocations(pdf, documentId, replacements, fallbackFonts));
+            }
         } catch (RuntimeException exception) {
             throw new IOException("Could not preserve and substitute text in this PDF.", exception);
         }
         return output.toByteArray();
     }
 
+    /** Finds token strings using the same low-level PDF text spans used by substitution. */
+    public Set<String> findMatchingTargets(byte[] sourcePdf, Set<String> targets) throws IOException {
+        if (sourcePdf == null || sourcePdf.length == 0 || targets == null || targets.isEmpty()) return Set.of();
+        Map<String, String> identitySubstitutions = new LinkedHashMap<>();
+        for (String target : targets) identitySubstitutions.put(target, target);
+        try (PdfDocument pdf = new PdfDocument(new PdfReader(new ByteArrayInputStream(sourcePdf)))) {
+            List<Replacement> matches = locateReplacements(locator.locateAll(pdf), identitySubstitutions, false);
+            Set<String> found = new LinkedHashSet<>();
+            for (Replacement match : matches) found.add(match.target());
+            return found;
+        } catch (RuntimeException exception) {
+            throw new IOException("Could not inspect text in this PDF.", exception);
+        }
+    }
+
+    public Optional<String> readTokenDocumentId(byte[] sourcePdf) throws IOException {
+        if (sourcePdf == null || sourcePdf.length == 0) return Optional.empty();
+        try (PdfDocument pdf = new PdfDocument(new PdfReader(new ByteArrayInputStream(sourcePdf)))) {
+            String info = pdf.getDocumentInfo().getMoreInfo(TOKEN_LOCATION_INFO);
+            if (info == null || info.isBlank()) return Optional.empty();
+            String firstLine = info.lines().findFirst().orElse("");
+            return firstLine.startsWith("documentId=")
+                    ? Optional.of(firstLine.substring("documentId=".length())) : Optional.empty();
+        } catch (RuntimeException exception) {
+            throw new IOException("Could not read SafeDocs metadata from this PDF.", exception);
+        }
+    }
+
+    private List<Replacement> locateFromStoredLocations(PdfDocument pdf, List<PdfTextSpan> spans,
+                                                         Map<String, String> substitutions) throws IOException {
+        String info = pdf.getDocumentInfo().getMoreInfo(TOKEN_LOCATION_INFO);
+        if (info == null || info.isBlank()) return List.of();
+        List<Replacement> replacements = new ArrayList<>();
+        for (String line : info.lines().skip(1).toList()) {
+            String[] fields = line.split("\\|", -1);
+            if (fields.length != 9) continue;
+            try {
+                String token = new String(Base64.getUrlDecoder().decode(fields[0]), java.nio.charset.StandardCharsets.UTF_8);
+                String original = substitutions.get(token);
+                if (original == null || original.isEmpty()) continue;
+                int page = Integer.parseInt(fields[1]);
+                float x = Float.parseFloat(fields[2]);
+                float y = Float.parseFloat(fields[3]);
+                float a = Float.parseFloat(fields[4]);
+                float b = Float.parseFloat(fields[5]);
+                float length = Float.parseFloat(fields[6]);
+                float fontSize = Float.parseFloat(fields[7]);
+                List<PdfTextSpan> occurrence = new ArrayList<>();
+                for (PdfTextSpan span : spans) {
+                    if (span.pageNumber() != page) continue;
+                    float dx = span.baselineX() - x;
+                    float dy = span.baselineY() - y;
+                    float along = dx * a + dy * b;
+                    float across = Math.abs(-dx * b + dy * a);
+                    if (across <= Math.max(1.5f, fontSize * 0.3f) && along >= -1f && along <= length + 1f) {
+                        occurrence.add(span);
+                    }
+                }
+                if (!occurrence.isEmpty()) replacements.add(new Replacement(occurrence, token, original, fontSize));
+            } catch (IllegalArgumentException exception) {
+                throw new IOException("SafeDocs token location metadata is damaged.", exception);
+            }
+        }
+        return replacements;
+    }
+
+    private String writeTokenLocations(PdfDocument pdf, String documentId, List<Replacement> replacements,
+                                       Map<String, PdfFont> fallbackFonts) throws IOException {
+        StringBuilder info = new StringBuilder("documentId=").append(documentId);
+        for (Replacement replacement : replacements) {
+            PdfTextSpan first = replacement.spans().get(0);
+            Rectangle bounds = boundsOf(replacement.spans());
+            float projectedLength = bounds.getWidth() * Math.abs(first.baselineA())
+                    + bounds.getHeight() * Math.abs(first.baselineB());
+            float size = Math.max(4f, first.fontSize());
+            PdfFont textFont = outputFont(pdf, first.font(), replacement.text(), fallbackFonts);
+            if (textFont != null) {
+                float tokenWidth = textFont.getWidth(replacement.text(), size);
+                if (tokenWidth > projectedLength && tokenWidth > 0) {
+                    tokenWidth *= Math.max(0.55f, projectedLength / tokenWidth);
+                }
+                projectedLength = Math.max(projectedLength, tokenWidth);
+            }
+            String token = Base64.getUrlEncoder().withoutPadding()
+                    .encodeToString(replacement.text().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            info.append('\n').append(token).append('|').append(first.pageNumber())
+                    .append('|').append(first.baselineX()).append('|').append(first.baselineY())
+                    .append('|').append(first.baselineA()).append('|').append(first.baselineB())
+                    .append('|').append(projectedLength).append('|').append(first.fontSize()).append('|').append("v1");
+        }
+        return info.toString();
+    }
+
     private List<Replacement> locateReplacements(List<PdfTextSpan> sourceSpans,
-                                                  Map<String, String> substitutions) throws IOException {
+                                                  Map<String, String> substitutions,
+                                                  boolean requireAllTargets) throws IOException {
         List<Map.Entry<String, String>> ordered = substitutions.entrySet().stream()
                 .filter(entry -> entry.getKey() != null && !entry.getKey().isEmpty()
                         && entry.getValue() != null && !entry.getValue().isEmpty())
@@ -75,6 +205,7 @@ public class PdfTextSubstitutionService {
             String target = normalize(entry.getKey());
             if (target.isEmpty()) continue;
             int located = 0;
+            int fullyCovered = 0;
             for (int start = 0; start < sourceSpans.size();) {
                 int page = sourceSpans.get(start).pageNumber();
                 int end = start;
@@ -87,11 +218,10 @@ public class PdfTextSubstitutionService {
                     content.append(normalized);
                     for (int c = 0; c < normalized.length(); c++) charMap.add(span);
                 }
-                int cursor = 0;
-                while (cursor < content.length()) {
-                    int found = content.indexOf(target, cursor);
-                    if (found < 0) break;
-                    int after = found + target.length();
+                List<int[]> matches = findMatches(content.toString(), target, entry.getKey());
+                for (int[] match : matches) {
+                    int found = match[0];
+                    int after = match[1];
                     List<PdfTextSpan> occurrence = new ArrayList<>();
                     Set<PdfTextSpan> local = java.util.Collections.newSetFromMap(new IdentityHashMap<>());
                     boolean overlap = false;
@@ -100,34 +230,83 @@ public class PdfTextSubstitutionService {
                         if (used.contains(span)) overlap = true;
                         if (local.add(span)) occurrence.add(span);
                     }
-                    if (!overlap && !occurrence.isEmpty()) {
-                        replacements.add(new Replacement(occurrence, entry.getValue()));
-                        used.addAll(occurrence);
-                        located++;
+                    if (!occurrence.isEmpty()) {
+                        long alreadyReplaced = occurrence.stream().filter(used::contains).count();
+                        if (alreadyReplaced == 0) {
+                            replacements.add(new Replacement(occurrence, entry.getKey(), entry.getValue(), 0f));
+                            used.addAll(occurrence);
+                            located++;
+                        } else if (alreadyReplaced == occurrence.size()) {
+                            // This value is fully contained in a longer value already tokenized.
+                            fullyCovered++;
+                        } else if (overlap) {
+                            throw new IOException("Sensitive text spans overlap and cannot be replaced safely.");
+                        }
                     }
-                    cursor = after;
                 }
                 start = end;
             }
-            if (located == 0) throw new IOException("Could not locate a sensitive value or token in the PDF: " + safeLabel(entry.getKey()));
+            if (requireAllTargets && located == 0 && fullyCovered == 0) {
+                throw new IOException("One or more requested text spans could not be located safely.");
+            }
         }
         return replacements;
     }
 
-    private void drawReplacement(PdfDocument pdf, Replacement replacement) {
+    /**
+     * Some subset PDF fonts render punctuation correctly but expose it as U+FFFD
+     * through their ToUnicode map. Try exact text first, then tolerate damaged
+     * punctuation only for our strictly formatted token keys.
+     */
+    private List<int[]> findMatches(String content, String normalizedTarget, String originalTarget) {
+        List<int[]> matches = new ArrayList<>();
+        int cursor = 0;
+        while (cursor < content.length()) {
+            int found = content.indexOf(normalizedTarget, cursor);
+            if (found < 0) break;
+            matches.add(new int[]{found, found + normalizedTarget.length()});
+            cursor = found + normalizedTarget.length();
+        }
+        if (!isToken(originalTarget)) return matches;
+
+        Matcher parts = Pattern.compile("[A-Z0-9]+").matcher(originalTarget);
+        StringBuilder tolerant = new StringBuilder("(?<![\\p{L}\\p{N}])[^\\p{L}\\p{N}]{0,4}");
+        boolean first = true;
+        while (parts.find()) {
+            if (!first) tolerant.append("[^\\p{L}\\p{N}]{0,4}");
+            tolerant.append(Pattern.quote(parts.group().toLowerCase(Locale.ROOT)));
+            first = false;
+        }
+        tolerant.append("[^\\p{L}\\p{N}]{0,4}(?![\\p{L}\\p{N}])");
+        Matcher matcher = Pattern.compile(tolerant.toString()).matcher(content);
+        while (matcher.find()) {
+            int start = matcher.start();
+            int end = matcher.end();
+            if (matches.stream().noneMatch(match -> match[0] == start && match[1] == end)) {
+                matches.add(new int[]{start, end});
+            }
+        }
+        matches.sort(Comparator.comparingInt(match -> match[0]));
+        return matches;
+    }
+
+    private void drawReplacement(PdfDocument pdf, Replacement replacement,
+                                 Map<String, PdfFont> fallbackFonts) throws IOException {
         List<PdfTextSpan> spans = replacement.spans();
         PdfTextSpan first = spans.get(0);
         Rectangle bounds = boundsOf(spans);
         float left = bounds.getLeft();
         float right = bounds.getRight();
         float availableWidth = Math.max(2f, right - left);
-        float originalSize = Math.max(4f, first.fontSize());
+        float originalSize = Math.max(4f, replacement.fontSize() > 0 ? replacement.fontSize() : first.fontSize());
         float horizontalScale = 1f;
-        if (first.font() != null) {
-            float replacementWidth = first.font().getWidth(replacement.text(), originalSize);
-            // Keep the source font size in the PDF text state. This lets decryption
-            // restore the original value at its original size after a token was narrowed.
-            if (replacement.text().matches("\\[[A-Z][A-Z0-9]*_\\d{3,}]" )
+        boolean isToken = isToken(replacement.text());
+        PdfFont outputFont = outputFont(pdf, first.font(), replacement.text(), fallbackFonts);
+        if (outputFont != null) {
+            float replacementWidth = outputFont.getWidth(replacement.text(), originalSize);
+            // Keep the source point size. Fit long tokens by adjusting only their horizontal
+            // advance so their glyph height and the surrounding line's vertical rhythm stay intact.
+            if (isToken
                     && replacementWidth > availableWidth && replacementWidth > 0) {
                 horizontalScale = Math.max(0.55f, availableWidth / replacementWidth);
             }
@@ -135,13 +314,65 @@ public class PdfTextSubstitutionService {
         PdfCanvas canvas = new PdfCanvas(pdf.getPage(first.pageNumber()).newContentStreamAfter(),
                 pdf.getPage(first.pageNumber()).getResources(), pdf);
         canvas.saveState().beginText();
-        if (first.font() != null) canvas.setFontAndSize(first.font(), originalSize);
+        if (outputFont != null) canvas.setFontAndSize(outputFont, originalSize);
+        if (horizontalScale < 1f) canvas.setHorizontalScaling(horizontalScale * 100f);
         if (first.color() != null) canvas.setFillColor(first.color());
-        canvas.setHorizontalScaling(horizontalScale * 100f);
         float a = first.baselineA();
         float b = first.baselineB();
         canvas.setTextMatrix(a, b, -b, a, first.baselineX(), first.baselineY()).showText(replacement.text());
         canvas.endText().restoreState();
+    }
+
+    /**
+     * Reuse the source font whenever it can encode every replacement character. PDF fonts are
+     * often subsetted, though, so they may lack token punctuation such as '[', ']' or '_'.
+     * Writing those through the subset font can produce missing or substituted glyphs.
+     */
+    private PdfFont outputFont(PdfDocument pdf, PdfFont sourceFont, String text,
+                               Map<String, PdfFont> fallbackFonts) throws IOException {
+        if (sourceFont != null && text.codePoints().allMatch(sourceFont::containsGlyph)) return sourceFont;
+
+        String sourceName = "";
+        if (sourceFont != null) {
+            PdfName baseFont = sourceFont.getPdfObject().getAsName(PdfName.BaseFont);
+            if (baseFont != null) sourceName = baseFont.getValue();
+        }
+        String normalizedName = sourceName.replaceFirst("^[A-Z]{6}\\+", "").toLowerCase(Locale.ROOT);
+        boolean bold = normalizedName.contains("bold") || normalizedName.contains("black")
+                || normalizedName.contains("heavy");
+        boolean italic = normalizedName.contains("italic") || normalizedName.contains("oblique");
+        String family;
+        String stem;
+        if (normalizedName.contains("courier") || normalizedName.contains("mono")) {
+            family = "cour";
+            stem = "Courier New";
+        } else if (normalizedName.contains("times") || normalizedName.contains("serif")
+                || normalizedName.contains("cambria") || normalizedName.contains("georgia")
+                || normalizedName.contains("palatino") || normalizedName.contains("garamond")) {
+            family = "times";
+            stem = "Times New Roman";
+        } else {
+            family = "arial";
+            stem = "Arial";
+        }
+        String style = bold && italic ? "bi" : bold ? "bd" : italic ? "i" : "";
+        String styleFile = family + style + ".ttf";
+        Path fontPath = Path.of(System.getenv().getOrDefault("WINDIR", "C:\\Windows"), "Fonts", styleFile);
+        if (!Files.isRegularFile(fontPath)) {
+            throw new IOException("The source PDF font cannot encode the replacement text, and the matching "
+                    + stem + " fallback font is unavailable.");
+        }
+        String cacheKey = fontPath.toString();
+        PdfFont fallback = fallbackFonts.get(cacheKey);
+        if (fallback == null) {
+            fallback = PdfFontFactory.createFont(fontPath.toString(), PdfEncodings.IDENTITY_H,
+                    PdfFontFactory.EmbeddingStrategy.FORCE_EMBEDDED, pdf);
+            fallbackFonts.put(cacheKey, fallback);
+        }
+        if (!text.codePoints().allMatch(fallback::containsGlyph)) {
+            throw new IOException("Neither the source PDF font nor the matching fallback font can encode the replacement text.");
+        }
+        return fallback;
     }
 
     private Rectangle boundsOf(List<PdfTextSpan> spans) {
@@ -160,12 +391,18 @@ public class PdfTextSubstitutionService {
     }
 
     private String normalize(String value) {
-        return value.replaceAll("\\s+", "").toLowerCase(Locale.ROOT);
+        String compatible = Normalizer.normalize(value, Normalizer.Form.NFKC).toLowerCase(Locale.ROOT);
+        StringBuilder normalized = new StringBuilder(compatible.length());
+        compatible.codePoints().filter(codePoint -> !Character.isWhitespace(codePoint)
+                        && !Character.isSpaceChar(codePoint)
+                        && Character.getType(codePoint) != Character.FORMAT)
+                .forEach(normalized::appendCodePoint);
+        return normalized.toString();
     }
 
-    private String safeLabel(String value) {
-        return value.length() > 24 ? value.substring(0, 24) + "…" : value;
+    private boolean isToken(String value) {
+        return value != null && value.matches("\\[[A-Z][A-Z0-9_]*_\\d{3,}]");
     }
 
-    private record Replacement(List<PdfTextSpan> spans, String text) { }
+    private record Replacement(List<PdfTextSpan> spans, String target, String text, float fontSize) { }
 }

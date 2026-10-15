@@ -35,11 +35,11 @@
         </section>
         <div class="workspace">
             <section class="panel main-panel" aria-label="Privacy-protecting PDF workspace">
-                <div class="heading"><h2><span class="step">1</span>Choose a PDF</h2><span class="hint">Up to 20 MB</span></div>
-                <input class="hidden-input" id="fileInput" type="file" accept="application/pdf,.pdf">
+                <div class="heading"><h2><span class="step">1</span>Choose PDFs to encrypt</h2><span class="hint">Up to 20 MB each</span></div>
+                <input class="hidden-input" id="fileInput" type="file" accept="application/pdf,.pdf" multiple>
                 <div class="drop" id="dropzone" role="button" tabindex="0" aria-label="Choose or drop a PDF file">
                     <div class="upload" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 15.5V4.75m0 0L8.25 8.5M12 4.75l3.75 3.75M5.5 14.25v3.5a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-                    <p class="drop-title">Drop your PDF here</p><p class="drop-copy">or <span class="browse">browse files</span> to select a document</p>
+                    <p class="drop-title">Drop one or more PDFs here</p><p class="drop-copy">or <span class="browse">browse files</span> to select multiple documents</p>
                     <div class="file" id="fileCard"><div class="file-badge">PDF</div><div class="file-info"><div class="file-name" id="fileName"></div><div class="file-size" id="fileSize"></div></div><button class="remove" id="removeFile" type="button" aria-label="Remove file">×</button></div>
                 </div>
                 <div class="policies">
@@ -60,7 +60,7 @@
                         <textarea class="sanitized" id="sanitizedText" readonly aria-label="Sanitized text preview"></textarea>
                     </article>
                     <article class="output-card">
-                        <div class="output-head"><div><h3>Local Key Mapping Dictionary</h3><p>Keep this key private. It contains the original sensitive values.</p></div></div>
+                        <div class="output-head"><div><h3>Local Key Mapping Dictionary</h3><p>Saved mappings are readable JSON in Desktop\Tester1.txt. The file contains the original sensitive values.</p></div></div>
                         <details class="key-details"><summary>Preview local mapping JSON</summary><pre class="key-json" id="mappingPreview"></pre></details>
                         <div class="key-actions"><button class="secondary" id="downloadKey" type="button">Download Local Key (JSON)</button></div>
                     </article>
@@ -68,22 +68,15 @@
 
                 <section class="restore" aria-labelledby="restoreTitle">
                     <h3 id="restoreTitle"><span class="step">3</span>Decrypt & Restore AI Analysis</h3>
-                    <p class="restore-copy">This step works independently: select a tokenized PDF and its matching JSON key. You do not need to run Step 1 first. Decryption retains the selected PDF’s page design and replaces tokens with the original sensitive text.</p>
-                    <div class="heading restore-file-heading"><h4><span class="step">1</span>Choose an encrypted PDF</h4><span class="hint">Up to 20 MB</span></div>
-                    <input class="hidden-input" id="tokenizedReportFile" type="file" accept="application/pdf,.pdf">
+                    <p class="restore-copy">Choose the tokenized PDF. SafeDocs finds its saved mapping in Desktop\Tester1.txt. After a successful decrypt, SafeDocs removes only that document’s mapping. Other mappings and Tester1.txt remain available.</p>
+                    <div class="heading restore-file-heading"><h4><span class="step">1</span>Choose PDFs to decrypt</h4><span class="hint">Up to 20 MB each</span></div>
+                    <input class="hidden-input" id="tokenizedReportFile" type="file" accept="application/pdf,.pdf" multiple>
                     <div class="drop restore-drop" id="restoreDropzone" role="button" tabindex="0" aria-label="Choose or drop an encrypted PDF">
                         <div class="upload" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 15.5V4.75m0 0L8.25 8.5M12 4.75l3.75 3.75M5.5 14.25v3.5a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-                        <p class="drop-title">Drop your encrypted PDF here</p><p class="drop-copy">or <span class="browse">browse files</span> to select a document</p>
+                        <p class="drop-title">Drop one or more encrypted PDFs here</p><p class="drop-copy">or <span class="browse">browse files</span> to select multiple documents</p>
                         <div class="file" id="restoreFileCard"><div class="file-badge">PDF</div><div class="file-info"><div class="file-name" id="restoreFileName"></div><div class="file-size" id="restoreFileSize"></div></div><button class="remove" id="removeTokenizedFile" type="button" aria-label="Remove encrypted PDF">×</button></div>
                     </div>
-                    <div class="heading restore-file-heading"><h4><span class="step">2</span>Choose the matching local key</h4><span class="hint">JSON file</span></div>
-                    <input class="hidden-input" id="keyFile" type="file" accept="application/json,.json">
-                    <div class="drop key-drop" id="keyDropzone" role="button" tabindex="0" aria-label="Choose or drop the matching JSON key">
-                        <div class="upload" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M6.5 3.75h7l4 4v12.5H6.5a2 2 0 0 1-2-2v-12.5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M13 4v4h4M8 13h8M8 16h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>
-                        <p class="drop-title">Drop your JSON key here</p><p class="drop-copy">or <span class="browse">browse files</span> to select the matching key</p>
-                        <div class="file" id="keyFileCard"><div class="file-badge">JSON</div><div class="file-info"><div class="file-name" id="keyFileName"></div><div class="file-size" id="keyFileSize"></div></div><button class="remove" id="removeKeyFile" type="button" aria-label="Remove JSON key">×</button></div>
-                    </div>
-                    <div class="restore-action"><button class="submit" id="restoreButton" type="button">Decrypt & Restore Identity</button><span class="note" id="keyState">No key loaded yet.</span></div>
+                    <div class="restore-action"><button class="submit" id="restoreButton" type="button">Decrypt & Restore Identity</button><span class="note" id="keyState">Looking for protected mappings in Desktop\Tester1.txt…</span></div>
                     <div class="restored-output" id="restoredOutput" aria-live="polite"><div class="restored-head"><strong>Restored report</strong><div class="key-actions"><button class="secondary" id="downloadRestored" type="button">Download Restored Report</button><button class="secondary" id="copyRestored" type="button">Copy Restored Report</button></div></div><div id="restoredText"></div></div>
                 </section>
             </section>
@@ -106,17 +99,19 @@
     const restoreInput=document.getElementById('tokenizedReportFile');
     const restoreDropzone=document.getElementById('restoreDropzone');
     const restoreFileCard=document.getElementById('restoreFileCard');
-    const keyInput=document.getElementById('keyFile');
-    const keyDropzone=document.getElementById('keyDropzone');
-    const keyFileCard=document.getElementById('keyFileCard');
     const submitButton=document.getElementById('submitButton');
     const result=document.getElementById('result');
     const maxFileSize=20*1024*1024;
-    let selectedFile=null;
+    let selectedFiles=[];
+    let encryptedJobs=[];
     let activeMapping={};
     let restoreMapping={};
-    let hasExplicitRestoreKey=false;
-    let tokenizedReportFile=null;
+    let desktopMapping={};
+    let desktopDocuments=[];
+    let desktopKeyLoaded=false;
+    let activeDocumentId=null;
+    let tokenizedReportFiles=[];
+    let restoredJobs=[];
     let restoredReport='';
 
     function formatSize(bytes){return bytes<1048576?`${(bytes/1024).toFixed(0)} KB`:`${(bytes/1048576).toFixed(1)} MB`}
@@ -127,68 +122,83 @@
       document.getElementById('outputs').style.display='none';
       document.getElementById('sanitizedText').value='';
       document.getElementById('mappingPreview').textContent='';
-      if(!Object.keys(restoreMapping).length)document.getElementById('keyState').textContent='No restore key loaded. Select its JSON file below.';
+      if(!desktopKeyLoaded)document.getElementById('keyState').textContent='No saved mapping found in Desktop\\Tester1.txt.';
     }
-    function setFile(file) {
-      result.className='result';result.textContent='';clearOutput();selectedFile=null;fileCard.style.display='none';submitButton.disabled=true;
-      if(!file)return;
-      if(!file.name.toLowerCase().endsWith('.pdf')||(file.type&&file.type!=='application/pdf')){showError('Please choose a PDF file.');input.value='';return}
-      if(file.size===0||file.size>maxFileSize){showError(file.size===0?'Please choose a non-empty PDF file.':'This file exceeds 20 MB. Choose a smaller PDF.');input.value='';return}
-      selectedFile=file;document.getElementById('fileName').textContent=file.name;document.getElementById('fileSize').textContent=formatSize(file.size);fileCard.style.display='flex';submitButton.disabled=false;
+    function setFiles(files) {
+      result.className='result';result.textContent='';clearOutput();selectedFiles=[];encryptedJobs=[];fileCard.style.display='none';submitButton.disabled=true;
+      const chosen=[...files];if(!chosen.length)return;
+      const invalid=chosen.find(file=>!file.name.toLowerCase().endsWith('.pdf')||(file.type&&file.type!=='application/pdf'));
+      if(invalid){showError(`${invalid.name} is not a PDF file.`);input.value='';return}
+      const tooLarge=chosen.find(file=>file.size===0||file.size>maxFileSize);
+      if(tooLarge){showError(`${tooLarge.name} is empty or exceeds 20 MB.`);input.value='';return}
+      selectedFiles=chosen;document.getElementById('fileName').textContent=chosen.map(file=>file.name).join(', ');document.getElementById('fileSize').textContent=`${chosen.length} PDF(s) · ${formatSize(chosen.reduce((total,file)=>total+file.size,0))} total`;fileCard.style.display='flex';submitButton.disabled=false;
     }
-    function setRestoreFile(file){
-      tokenizedReportFile=null;restoreFileCard.style.display='none';restoredReport='';document.getElementById('restoredOutput').style.display='none';
-      if(!file)return;
-      if(!file.name.toLowerCase().endsWith('.pdf')||(file.type&&file.type!=='application/pdf')){showError('Please choose an encrypted PDF file.');restoreInput.value='';return}
-      if(file.size===0||file.size>maxFileSize){showError(file.size===0?'Please choose a non-empty PDF file.':'This PDF exceeds 20 MB. Choose a smaller file.');restoreInput.value='';return}
-      tokenizedReportFile=file;document.getElementById('restoreFileName').textContent=file.name;document.getElementById('restoreFileSize').textContent=formatSize(file.size);restoreFileCard.style.display='flex';result.className='result';result.textContent='';
+    function setRestoreFiles(files){
+      tokenizedReportFiles=[];restoredJobs=[];restoreFileCard.style.display='none';restoredReport='';document.getElementById('restoredOutput').style.display='none';
+      const chosen=[...files];if(!chosen.length)return;
+      const invalid=chosen.find(file=>!file.name.toLowerCase().endsWith('.pdf')||(file.type&&file.type!=='application/pdf'));
+      if(invalid){showError(`${invalid.name} is not a PDF file.`);restoreInput.value='';return}
+      const tooLarge=chosen.find(file=>file.size===0||file.size>maxFileSize);
+      if(tooLarge){showError(`${tooLarge.name} is empty or exceeds 20 MB.`);restoreInput.value='';return}
+      tokenizedReportFiles=chosen;document.getElementById('restoreFileName').textContent=chosen.map(file=>file.name).join(', ');document.getElementById('restoreFileSize').textContent=`${chosen.length} PDF(s) · ${formatSize(chosen.reduce((total,file)=>total+file.size,0))} total`;restoreFileCard.style.display='flex';result.className='result';result.textContent='';
     }
-    async function setKeyFile(file){
-      keyFileCard.style.display='none';restoreMapping={};hasExplicitRestoreKey=false;
-      if(!file){document.getElementById('keyState').textContent='No restore key loaded. Select its JSON file.';return}
-      if(!file.name.toLowerCase().endsWith('.json')||file.size===0||file.size>maxFileSize){showError('Choose a non-empty JSON key file smaller than 20 MB.');keyInput.value='';document.getElementById('keyState').textContent='No valid restore key loaded.';return}
-      try{
-        restoreMapping=validateMapping(JSON.parse(await file.text()));hasExplicitRestoreKey=true;
-        document.getElementById('keyFileName').textContent=file.name;document.getElementById('keyFileSize').textContent=formatSize(file.size);keyFileCard.style.display='flex';
-        document.getElementById('keyState').textContent=`Standalone restore key loaded (${Object.keys(restoreMapping).length} tokens).`;
-        showSuccess('Restore key loaded. You can decrypt a PDF without running Step 1.');
-      }catch(error){restoreMapping={};keyInput.value='';document.getElementById('keyState').textContent='No valid restore key loaded.';showError(error.message||'Could not read this local key file.')}
-    }
-    function setLoading(loading){submitButton.disabled=loading||!selectedFile;document.getElementById('spinner').style.display=loading?'inline-block':'none';document.getElementById('submitIcon').style.display=loading?'none':'block';document.getElementById('buttonText').textContent=loading?'AI is detecting sensitive text…':'Tokenize & generate safe text (Encrypt)'}
+    function setLoading(loading){submitButton.disabled=loading||!selectedFiles.length;document.getElementById('spinner').style.display=loading?'inline-block':'none';document.getElementById('submitIcon').style.display=loading?'none':'block';document.getElementById('buttonText').textContent=loading?'AI is detecting sensitive text…':'Tokenize & generate safe text (Encrypt)'}
     async function copyText(value,label){try{await navigator.clipboard.writeText(value);showSuccess(`${label} copied to clipboard.`)}catch(_){showError('Clipboard access failed. Select and copy the text manually.')}}
     function downloadKey(){
       const blob=new Blob([JSON.stringify(activeMapping,null,2)],{type:'application/json'});
       const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='SafeDocs-local-key.json';document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
     }
-    async function downloadSubstitutedPdf(file,mapping,endpoint,filename){
-      const form=new FormData();form.append('file',file);form.append('mapping',JSON.stringify(mapping));
+    async function downloadSubstitutedPdf(file,mapping,endpoint,filename,documentId=null){
+      const form=new FormData();form.append('file',file);if(mapping)form.append('mapping',JSON.stringify(mapping));
+      if(documentId)form.append('documentId',documentId);
       const response=await fetch(`/api/safedocs/${endpoint}`,{method:'POST',body:form});
       if(!response.ok)throw new Error((await response.text())||`PDF processing failed (HTTP ${response.status}).`);
+      const keyDeleted=response.headers.get('X-SafeDocs-Key-Deleted')==='true';
       const blob=await response.blob();const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+      return keyDeleted;
+    }
+    async function fetchDesktopDocuments(){
+      const response=await fetch('/api/safedocs/local-key',{cache:'no-store'});
+      if(!response.ok)throw new Error('Could not read the mappings in Desktop\\Tester1.txt.');
+      const data=await response.json();
+      return data.documents||[];
+    }
+    async function findMatchingDocument(file){
+      const form=new FormData();form.append('file',file);
+      const response=await fetch('/api/safedocs/match-local-key',{method:'POST',body:form});
+      if(!response.ok)throw new Error((await response.text())||'SafeDocs could not find a saved mapping for this PDF.');
+      const match=await response.json();
+      return {...match,mapping:validateMapping(match.mapping||{})};
+    }
+    async function loadDesktopKey(){
+      try{
+        desktopDocuments=await fetchDesktopDocuments();
+        desktopKeyLoaded=desktopDocuments.length>0;document.getElementById('keyState').textContent=desktopKeyLoaded?`${desktopDocuments.length} readable mapping(s) found in Desktop\\Tester1.txt. Only the matching mapping is removed after restore.`:'No saved mappings found in Desktop\\Tester1.txt.';
+      }catch(error){desktopDocuments=[];desktopMapping={};restoreMapping={};desktopKeyLoaded=false;document.getElementById('keyState').textContent=error.message;}
     }
     async function downloadSanitized(){
-      if(!selectedFile){showError('Choose the source PDF first.');return}
-      try{await downloadSubstitutedPdf(selectedFile,activeMapping,'tokenize-pdf','SafeDocs-tokenized.pdf');showSuccess('Tokenized PDF downloaded with the original page design preserved.');}
-      catch(error){showError(error.message||'Could not create the tokenized PDF.')}
+      if(!encryptedJobs.length){showError('Encrypt the selected PDFs first.');return}
+      try{for(const job of encryptedJobs)await downloadSubstitutedPdf(job.file,job.mapping,'tokenize-pdf',`SafeDocs-tokenized-${job.file.name}`,job.documentId);showSuccess(`${encryptedJobs.length} tokenized PDF(s) downloaded.`);}
+      catch(error){showError(error.message||'Could not create the tokenized PDFs.')}
     }
     function validateMapping(value,allowEmpty=false){
       if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('The JSON key must be an object mapping tokens to original text.');
       const entries=Object.entries(value);
       if(!entries.length&&!allowEmpty)throw new Error('The JSON key contains no token mappings.');
-      for(const [token,original] of entries){if(!/^\[[A-Z][A-Z0-9]*_\d{3,}\]$/.test(token)||typeof original!=='string')throw new Error('The JSON key contains an invalid token mapping.')}
+      for(const [token,original] of entries){if(!/^\[[A-Z][A-Z0-9_]*_\d{3,}\]$/.test(token)||typeof original!=='string')throw new Error('The JSON key contains an invalid token mapping.')}
       return Object.fromEntries(entries);
     }
     function restoreReport(report,mapping){
       const tokens=Object.keys(mapping).sort((a,b)=>b.length-a.length);
-      const pattern=new RegExp(tokens.map(token=>token.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'g');
-      const fragment=document.createDocumentFragment();let cursor=0;let match;let restored='';
+      const pattern=new RegExp(tokens.map(token=>[...token].map(character=>character.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('[\\s\\u00A0\\u200B\\uFEFF\\u00AD]*')).join('|'),'giu');
+      const fragment=document.createDocumentFragment();let cursor=0;let match;let restored='';let replacedCount=0;const replacedTokens=new Set();
       while((match=pattern.exec(report))!==null){
         const unchanged=report.slice(cursor,match.index);restored+=unchanged;fragment.append(document.createTextNode(unchanged));
-        const original=mapping[match[0]];restored+=original;
+        const token=match[0].replace(/[\s\u00A0\u200B\uFEFF\u00AD]/g,'').toUpperCase();const original=mapping[token];if(original===undefined){restored+=match[0];fragment.append(document.createTextNode(match[0]));cursor=pattern.lastIndex;continue}restored+=original;replacedCount++;replacedTokens.add(token);
         const mark=document.createElement('mark');mark.textContent=original;fragment.append(mark);cursor=pattern.lastIndex;
       }
       const tail=report.slice(cursor);restored+=tail;fragment.append(document.createTextNode(tail));
-      return {text:restored,fragment};
+      return {text:restored,fragment,replacedCount,replacedTokens};
     }
     async function readReportFile(file){
       const form=new FormData();form.append('file',file);
@@ -197,67 +207,97 @@
       return response.text();
     }
 
-    dropzone.addEventListener('click',event=>{if(event.target.closest('#removeFile'))return;if(!selectedFile)input.click()});
-    dropzone.addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&!selectedFile){event.preventDefault();input.click()}});
-    input.addEventListener('change',()=>setFile(input.files[0]||null));
-    document.getElementById('removeFile').addEventListener('click',event=>{event.stopPropagation();input.value='';setFile(null)});
+    dropzone.addEventListener('click',event=>{if(event.target.closest('#removeFile'))return;input.click()});
+    dropzone.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();input.click()}});
+    input.addEventListener('change',()=>setFiles(input.files));
+    document.getElementById('removeFile').addEventListener('click',event=>{event.stopPropagation();input.value='';setFiles([])});
     for(const name of ['dragenter','dragover'])dropzone.addEventListener(name,event=>{event.preventDefault();dropzone.classList.add('dragging')});
     for(const name of ['dragleave','drop'])dropzone.addEventListener(name,event=>{event.preventDefault();dropzone.classList.remove('dragging')});
-    dropzone.addEventListener('drop',event=>setFile(event.dataTransfer.files[0]||null));
+    dropzone.addEventListener('drop',event=>setFiles(event.dataTransfer.files));
 
     submitButton.addEventListener('click',async()=>{
-      if(!selectedFile)return;
+      if(!selectedFiles.length)return;
       const policies=[...document.querySelectorAll('input[name="policies"]:checked')].map(item=>item.value);
       if(!policies.length){showError('Choose at least one category for AI detection.');return}
-      const form=new FormData();form.append('file',selectedFile);policies.forEach(policy=>form.append('policies',policy));result.className='result';setLoading(true);
+      result.className='result';setLoading(true);encryptedJobs=[];const aggregateMapping={};const sanitized=[];
       try{
-        const response=await fetch('/api/safedocs/tokenize',{method:'POST',body:form});
-        if(!response.ok)throw new Error((await response.text())||`Tokenization failed (HTTP ${response.status}).`);
-        const data=await response.json();activeMapping=validateMapping(data.mapping||{},true);
-        if(!hasExplicitRestoreKey){restoreMapping=activeMapping;document.getElementById('keyState').textContent=Object.keys(restoreMapping).length?`Restore key ready (${Object.keys(restoreMapping).length} tokens).`: 'No sensitive entities were detected; load a key file to decrypt another PDF.';}
-        document.getElementById('sanitizedText').value=data.sanitizedText||'';
+        for(const file of selectedFiles){
+          const form=new FormData();form.append('file',file);policies.forEach(policy=>form.append('policies',policy));
+          const response=await fetch('/api/safedocs/tokenize',{method:'POST',body:form});
+          if(!response.ok)throw new Error(`${file.name}: ${(await response.text())||`Tokenization failed (HTTP ${response.status}).`}`);
+          const data=await response.json();const mapping=validateMapping(data.mapping||{},true);const documentId=data.documentId||null;
+          encryptedJobs.push({file,mapping,documentId});Object.assign(aggregateMapping,mapping);sanitized.push(`===== ${file.name} =====\n${data.sanitizedText||''}`);
+        }
+        activeMapping=aggregateMapping;activeDocumentId=null;
+        restoreMapping=activeMapping;desktopMapping=activeMapping;desktopKeyLoaded=Object.keys(activeMapping).length>0;
+        await loadDesktopKey();
+        document.getElementById('sanitizedText').value=sanitized.join('\n\n');
         document.getElementById('mappingPreview').textContent=JSON.stringify(activeMapping,null,2);
         document.getElementById('outputs').style.display='grid';
-        if(!hasExplicitRestoreKey)document.getElementById('keyState').textContent=Object.keys(restoreMapping).length?`In-memory restore key ready (${Object.keys(restoreMapping).length} tokens).`:'No sensitive entities were detected; load a matching key file to decrypt independently.';
-        showSuccess(Object.keys(activeMapping).length?`Tokenization complete. ${Object.keys(activeMapping).length} unique token mappings are held in this page's memory.`:'No matching entities were detected. The extracted text is unchanged.');
-      }catch(error){showError(error.message||'SafeDocs could not tokenize this PDF. Check the service and AI configuration.')}finally{setLoading(false)}
+        document.getElementById('keyState').textContent=Object.keys(restoreMapping).length?`Mappings for ${encryptedJobs.length} document(s) saved in Desktop\\Tester1.txt.`:'No sensitive entities were detected; no local key was saved.';
+        showSuccess(`${encryptedJobs.length} PDF(s) processed. ${Object.keys(activeMapping).length} unique token mappings were created.`);
+      }catch(error){
+        if(encryptedJobs.length){
+          activeMapping=aggregateMapping;document.getElementById('sanitizedText').value=sanitized.join('\n\n');
+          document.getElementById('mappingPreview').textContent=JSON.stringify(activeMapping,null,2);
+          document.getElementById('outputs').style.display='grid';
+          showError(`${error.message||'Tokenization failed.'} ${encryptedJobs.length} PDF(s) finished; download those results before retrying.`);
+        }else showError(error.message||'SafeDocs could not tokenize this PDF. Check the service and AI configuration.')
+      }finally{setLoading(false)}
     });
     document.getElementById('copySanitized').addEventListener('click',()=>copyText(document.getElementById('sanitizedText').value,'Sanitized text'));
     document.getElementById('downloadSanitized').addEventListener('click',downloadSanitized);
     document.getElementById('downloadKey').addEventListener('click',downloadKey);
-    restoreDropzone.addEventListener('click',event=>{if(event.target.closest('#removeTokenizedFile'))return;if(!tokenizedReportFile)restoreInput.click()});
-    restoreDropzone.addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&!tokenizedReportFile){event.preventDefault();restoreInput.click()}});
-    restoreInput.addEventListener('change',()=>setRestoreFile(restoreInput.files[0]||null));
-    document.getElementById('removeTokenizedFile').addEventListener('click',event=>{event.stopPropagation();restoreInput.value='';setRestoreFile(null)});
+    restoreDropzone.addEventListener('click',event=>{if(event.target.closest('#removeTokenizedFile'))return;restoreInput.click()});
+    restoreDropzone.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();restoreInput.click()}});
+    restoreInput.addEventListener('change',()=>setRestoreFiles(restoreInput.files));
+    document.getElementById('removeTokenizedFile').addEventListener('click',event=>{event.stopPropagation();restoreInput.value='';setRestoreFiles([])});
     for(const name of ['dragenter','dragover'])restoreDropzone.addEventListener(name,event=>{event.preventDefault();restoreDropzone.classList.add('dragging')});
     for(const name of ['dragleave','drop'])restoreDropzone.addEventListener(name,event=>{event.preventDefault();restoreDropzone.classList.remove('dragging')});
-    restoreDropzone.addEventListener('drop',event=>setRestoreFile(event.dataTransfer.files[0]||null));
-    keyDropzone.addEventListener('click',event=>{if(event.target.closest('#removeKeyFile'))return;if(!hasExplicitRestoreKey)keyInput.click()});
-    keyDropzone.addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&!hasExplicitRestoreKey){event.preventDefault();keyInput.click()}});
-    keyInput.addEventListener('change',()=>setKeyFile(keyInput.files[0]||null));
-    document.getElementById('removeKeyFile').addEventListener('click',event=>{event.stopPropagation();keyInput.value='';setKeyFile(null)});
-    for(const name of ['dragenter','dragover'])keyDropzone.addEventListener(name,event=>{event.preventDefault();keyDropzone.classList.add('dragging')});
-    for(const name of ['dragleave','drop'])keyDropzone.addEventListener(name,event=>{event.preventDefault();keyDropzone.classList.remove('dragging')});
-    keyDropzone.addEventListener('drop',event=>setKeyFile(event.dataTransfer.files[0]||null));
+    restoreDropzone.addEventListener('drop',event=>setRestoreFiles(event.dataTransfer.files));
     document.getElementById('restoreButton').addEventListener('click',async()=>{
-      if(!tokenizedReportFile){showError('Choose the tokenized analysis report file first.');return}
-      if(!Object.keys(restoreMapping).length){showError('Load the JSON key that matches this tokenized PDF. Encryption in Step 1 is not required.');return}
+      if(!tokenizedReportFiles.length){showError('Choose one or more tokenized analysis reports first.');return}
       try{
-        const report=await readReportFile(tokenizedReportFile);
-        const restored=restoreReport(report,restoreMapping);
-        restoredReport=restored.text;
-        document.getElementById('restoredText').replaceChildren(restored.fragment);
+        restoredJobs=[];let restoredParts=[];let allMappingsFullyRestored=true;
+        for(const file of tokenizedReportFiles){
+          const match=await findMatchingDocument(file);const mapping=match.mapping;
+          const report=await readReportFile(file);const restored=restoreReport(report,mapping);
+          if(!restored.replacedCount||restored.replacedTokens.size<match.matchedTokenCount)throw new Error(`${file.name}: some saved tokens could not be fully restored. Its mapping was kept.`);
+          restoredJobs.push({file,mapping,documentId:match.documentId});restoredParts.push(`===== ${file.name} =====\n${restored.text}`);
+          if(restored.replacedTokens.size<Object.keys(mapping).length)allMappingsFullyRestored=false;
+        }
+        restoredReport=restoredParts.join('\n\n');
+        document.getElementById('restoredText').textContent=restoredReport;
         document.getElementById('restoredOutput').style.display='block';
-        showSuccess('Restored preview is ready. Downloading the PDF will replace tokens in the original page layout using this local service.');
+        if(allMappingsFullyRestored){
+          const consumedDocuments=new Set();
+          for(const job of restoredJobs){
+            if(consumedDocuments.has(job.documentId))continue;
+            const consumeForm=new FormData();consumeForm.append('documentId',job.documentId);consumeForm.append('mapping',JSON.stringify(job.mapping));
+            const consumeResponse=await fetch('/api/safedocs/consume-local-key',{method:'POST',body:consumeForm});
+            if(!consumeResponse.ok)throw new Error((await consumeResponse.text())||`Could not update Tester1.txt after restoring ${job.file.name}.`);
+            const consumeResult=await consumeResponse.json();if(!consumeResult.deleted)throw new Error(`The mapping for ${job.file.name} changed and was kept.`);
+            consumedDocuments.add(job.documentId);
+          }
+          await loadDesktopKey();
+          document.getElementById('keyState').textContent=`Restored ${restoredJobs.length} file(s); their mappings were removed from Tester1.txt.`;
+          showSuccess(`${restoredJobs.length} report(s) restored. Their mappings were removed.`);
+        } else {
+          document.getElementById('keyState').textContent='Some reports contain only part of their saved tokens. The corresponding mappings were kept in Tester1.txt.';
+          showSuccess(`${restoredJobs.length} report(s) restored. Partial mappings were kept for later use.`);
+        }
       }catch(error){showError(error.message||'Could not read the selected report PDF.')}
     });
     document.getElementById('downloadRestored').addEventListener('click',async()=>{
-      if(!tokenizedReportFile){showError('Choose the tokenized PDF to restore first.');return}
-      if(!Object.keys(restoreMapping).length){showError('Load the JSON key that matches this tokenized PDF. Encryption in Step 1 is not required.');return}
-      try{await downloadSubstitutedPdf(tokenizedReportFile,restoreMapping,'restore-pdf','SafeDocs-restored-report.pdf');showSuccess('Restored PDF downloaded with the source page design preserved.');}
+      if(!restoredJobs.length){showError('Restore the selected PDFs first.');return}
+      try{
+        for(const job of restoredJobs)await downloadSubstitutedPdf(job.file,job.mapping,'restore-pdf',`SafeDocs-restored-${job.file.name}`,job.documentId);
+        showSuccess(`${restoredJobs.length} restored PDF(s) downloaded.`);
+      }
       catch(error){showError(error.message||'Could not restore the PDF.')}
     });
     document.getElementById('copyRestored').addEventListener('click',()=>copyText(restoredReport,'Restored report'));
+    loadDesktopKey();
 </script>
 </body>
 </html>
