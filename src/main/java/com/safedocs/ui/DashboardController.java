@@ -169,11 +169,17 @@ public class DashboardController {
             if (embeddedId != null) {
                 for (LocalKeyStore.StoredDocument document : documents) {
                     if (document.id().equals(embeddedId)) {
+                        var foundTokens = pdfTextSubstitutionService.findMatchingTargets(pdf,
+                                document.mapping().keySet());
+                        if (foundTokens.isEmpty()) {
+                            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                                    .body("This PDF contains SafeDocs metadata, but none of its saved mapping tokens were found.");
+                        }
                         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(java.util.Map.of(
                                 "documentId", document.id(),
                                 "fileName", document.fileName(),
                                 "mapping", document.mapping(),
-                                "matchedTokenCount", document.mapping().size()));
+                                "matchedTokenCount", foundTokens.size()));
                     }
                 }
             }

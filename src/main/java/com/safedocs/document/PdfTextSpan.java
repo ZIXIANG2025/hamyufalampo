@@ -6,5 +6,6 @@ import com.itextpdf.kernel.geom.Rectangle;
 
 public record PdfTextSpan(int pageNumber, String text, Rectangle rectangle,
                           float baselineX, float baselineY, float baselineA, float baselineB,
-                          PdfFont font, float fontSize, Color color) {
+                          PdfFont font, float fontSize, Color color,
+                          String fontResourceName, String fontBaseName) {
 }

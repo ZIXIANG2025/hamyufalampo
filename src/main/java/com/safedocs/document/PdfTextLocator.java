@@ -3,6 +3,7 @@ package com.safedocs.document;
 import com.itextpdf.kernel.geom.LineSegment;
 import com.itextpdf.kernel.geom.Vector;
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfName;
 import com.itextpdf.kernel.pdf.canvas.parser.EventType;
 import com.itextpdf.kernel.pdf.canvas.parser.PdfCanvasProcessor;
 import com.itextpdf.kernel.pdf.canvas.parser.data.IEventData;
@@ -34,10 +35,15 @@ public class PdfTextLocator {
                         float dy = end.get(1) - start.get(1);
                         float length = (float) Math.sqrt(dx * dx + dy * dy);
                         if (length < 0.001f) length = 1f;
+                        var fontResource = pdf.getPage(page).getResources().getResourceName(character.getFont());
+                        String fontResourceName = fontResource == null ? null : fontResource.getValue();
+                        PdfName baseFont = character.getFont().getPdfObject().getAsName(PdfName.BaseFont);
+                        String fontBaseName = baseFont == null ? null : baseFont.getValue();
                         spans.add(new PdfTextSpan(page, text,
                                 character.getAscentLine().getBoundingRectangle(),
                                 start.get(0), start.get(1), dx / length, dy / length,
-                                character.getFont(), character.getFontSize(), character.getFillColor()));
+                                character.getFont(), character.getFontSize(), character.getFillColor(),
+                                fontResourceName, fontBaseName));
                     }
                 }
 

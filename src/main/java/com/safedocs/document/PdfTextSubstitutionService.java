@@ -3,7 +3,10 @@ package com.safedocs.document;
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfDictionary;
+import com.itextpdf.kernel.pdf.PdfObject;
 import com.itextpdf.kernel.pdf.PdfReader;
+import com.itextpdf.kernel.pdf.PdfResources;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.kernel.font.PdfFont;
@@ -29,7 +32,6 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.Set;
 import java.util.Base64;
 import java.util.Optional;
 import java.util.Set;
@@ -67,9 +69,14 @@ public class PdfTextSubstitutionService {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         try (PdfDocument pdf = new PdfDocument(new PdfReader(new ByteArrayInputStream(sourcePdf)), new PdfWriter(output))) {
             List<PdfTextSpan> spans = locator.locateAll(pdf);
-            // Locate the complete token from its rendered characters. Stored bounds from older
-            // files may end before the final token glyph (especially when the token was scaled).
-            List<Replacement> replacements = locateReplacements(spans, substitutions, requireAllTargets);
+            // Restoring from token PDFs uses the original font resource and point size captured
+            // during tokenization. Fall back to text matching for older PDFs without metadata.
+            List<Replacement> replacements = !requireAllTargets
+                    ? locateFromStoredLocations(pdf, spans, substitutions)
+                    : List.of();
+            if (replacements.isEmpty()) {
+                replacements = locateReplacements(spans, substitutions, requireAllTargets);
+            }
             if (replacements.isEmpty()) throw new IOException("No replacement text could be located in the PDF.");
 
             List<PdfCleanUpLocation> cleanups = new ArrayList<>();
@@ -133,7 +140,7 @@ public class PdfTextSubstitutionService {
         List<Replacement> replacements = new ArrayList<>();
         for (String line : info.lines().skip(1).toList()) {
             String[] fields = line.split("\\|", -1);
-            if (fields.length != 9) continue;
+            if (fields.length < 9 || fields.length > 12) continue;
             try {
                 String token = new String(Base64.getUrlDecoder().decode(fields[0]), java.nio.charset.StandardCharsets.UTF_8);
                 String original = substitutions.get(token);
@@ -145,6 +152,12 @@ public class PdfTextSubstitutionService {
                 float b = Float.parseFloat(fields[5]);
                 float length = Float.parseFloat(fields[6]);
                 float fontSize = Float.parseFloat(fields[7]);
+                boolean version2 = fields.length == 10 && "v2".equals(fields[8]);
+                boolean version3 = fields.length == 11 && "v3".equals(fields[8]);
+                boolean version4 = fields.length == 12 && "v4".equals(fields[8]);
+                String fontResourceName = version2 || version3 || version4 ? decodeMetadataField(fields[9]) : null;
+                String fontBaseName = version3 || version4 ? decodeMetadataField(fields[10]) : null;
+                float originalWidth = version4 ? Float.parseFloat(fields[11]) : 0f;
                 List<PdfTextSpan> occurrence = new ArrayList<>();
                 for (PdfTextSpan span : spans) {
                     if (span.pageNumber() != page) continue;
@@ -156,7 +169,20 @@ public class PdfTextSubstitutionService {
                         occurrence.add(span);
                     }
                 }
-                if (!occurrence.isEmpty()) replacements.add(new Replacement(occurrence, token, original, fontSize));
+                if (!occurrence.isEmpty()) {
+                    PdfFont originalFont = findStoredFont(pdf, page, fontResourceName, fontBaseName,
+                            occurrence.get(0).font(), original);
+                    if (originalFont != null) {
+                        List<PdfTextSpan> restoredSpans = new ArrayList<>(occurrence.size());
+                        for (PdfTextSpan span : occurrence) {
+                            restoredSpans.add(new PdfTextSpan(span.pageNumber(), span.text(), span.rectangle(),
+                                    span.baselineX(), span.baselineY(), span.baselineA(), span.baselineB(),
+                                    originalFont, fontSize, span.color(), fontResourceName, fontBaseName));
+                        }
+                        occurrence = restoredSpans;
+                    }
+                    replacements.add(new Replacement(occurrence, token, original, fontSize, length, originalWidth));
+                }
             } catch (IllegalArgumentException exception) {
                 throw new IOException("SafeDocs token location metadata is damaged.", exception);
             }
@@ -164,14 +190,59 @@ public class PdfTextSubstitutionService {
         return replacements;
     }
 
+    private PdfFont findStoredFont(PdfDocument pdf, int pageNumber, String resourceName,
+                                  String baseFontName, PdfFont tokenFont, String restoredText) {
+        PdfResources resources = pdf.getPage(pageNumber).getResources();
+        if (resourceName != null && !resourceName.isBlank()) {
+            PdfObject fontObject = resources.getResourceObject(PdfName.Font, new PdfName(resourceName));
+            if (fontObject instanceof PdfDictionary fontDictionary) {
+                PdfName actualBaseName = fontDictionary.getAsName(PdfName.BaseFont);
+                if (baseFontName == null || baseFontName.isBlank() || (actualBaseName != null
+                        && normalizedFontName(actualBaseName.getValue()).equals(normalizedFontName(baseFontName)))) {
+                    return PdfFontFactory.createFont(fontDictionary);
+                }
+            }
+        }
+
+        // PdfCleaner may rename resources (for example, F10 becomes F3). Match the
+        // PostScript font name saved before cleanup instead of relying on that key.
+        if (baseFontName != null && !baseFontName.isBlank()) {
+            String expectedName = normalizedFontName(baseFontName);
+            PdfFont firstMatchingFont = null;
+            for (PdfName candidateName : resources.getResourceNames(PdfName.Font)) {
+                PdfObject fontObject = resources.getResourceObject(PdfName.Font, candidateName);
+                if (!(fontObject instanceof PdfDictionary fontDictionary)) continue;
+                PdfFont candidate = PdfFontFactory.createFont(fontDictionary);
+                PdfName candidateBaseName = fontDictionary.getAsName(PdfName.BaseFont);
+                if (candidateBaseName == null || !normalizedFontName(candidateBaseName.getValue()).equals(expectedName)) {
+                    continue;
+                }
+                if (firstMatchingFont == null) firstMatchingFont = candidate;
+                if (restoredText.codePoints().allMatch(candidate::containsGlyph)) return candidate;
+            }
+            if (firstMatchingFont != null) return firstMatchingFont;
+        }
+
+        // Older metadata has no PostScript name. The token's own font generally keeps
+        // the original family and style, or is the matching fallback chosen at tokenize time.
+        return tokenFont;
+    }
+
+    private String normalizedFontName(String name) {
+        return name.replaceFirst("^[A-Z]{6}\\+", "").toLowerCase(Locale.ROOT);
+    }
+
+    private String decodeMetadataField(String field) {
+        return new String(Base64.getUrlDecoder().decode(field), java.nio.charset.StandardCharsets.UTF_8);
+    }
+
     private String writeTokenLocations(PdfDocument pdf, String documentId, List<Replacement> replacements,
                                        Map<String, PdfFont> fallbackFonts) throws IOException {
         StringBuilder info = new StringBuilder("documentId=").append(documentId);
         for (Replacement replacement : replacements) {
             PdfTextSpan first = replacement.spans().get(0);
-            Rectangle bounds = boundsOf(replacement.spans());
-            float projectedLength = bounds.getWidth() * Math.abs(first.baselineA())
-                    + bounds.getHeight() * Math.abs(first.baselineB());
+            float originalWidth = replacement.originalWidth();
+            float projectedLength = originalWidth;
             float size = Math.max(4f, first.fontSize());
             PdfFont textFont = outputFont(pdf, first.font(), replacement.text(), fallbackFonts);
             if (textFont != null) {
@@ -186,7 +257,14 @@ public class PdfTextSubstitutionService {
             info.append('\n').append(token).append('|').append(first.pageNumber())
                     .append('|').append(first.baselineX()).append('|').append(first.baselineY())
                     .append('|').append(first.baselineA()).append('|').append(first.baselineB())
-                    .append('|').append(projectedLength).append('|').append(first.fontSize()).append('|').append("v1");
+                    .append('|').append(projectedLength).append('|').append(first.fontSize()).append('|').append("v4")
+                    .append('|').append(Base64.getUrlEncoder().withoutPadding().encodeToString(
+                            (first.fontResourceName() == null ? "" : first.fontResourceName())
+                                    .getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+                    .append('|').append(Base64.getUrlEncoder().withoutPadding().encodeToString(
+                            (first.fontBaseName() == null ? "" : first.fontBaseName())
+                                    .getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+                    .append('|').append(originalWidth);
         }
         return info.toString();
     }
@@ -233,7 +311,8 @@ public class PdfTextSubstitutionService {
                     if (!occurrence.isEmpty()) {
                         long alreadyReplaced = occurrence.stream().filter(used::contains).count();
                         if (alreadyReplaced == 0) {
-                            replacements.add(new Replacement(occurrence, entry.getKey(), entry.getValue(), 0f));
+                            replacements.add(new Replacement(occurrence, entry.getKey(), entry.getValue(), 0f,
+                                    0f, projectedWidth(occurrence)));
                             used.addAll(occurrence);
                             located++;
                         } else if (alreadyReplaced == occurrence.size()) {
@@ -304,10 +383,15 @@ public class PdfTextSubstitutionService {
         PdfFont outputFont = outputFont(pdf, first.font(), replacement.text(), fallbackFonts);
         if (outputFont != null) {
             float replacementWidth = outputFont.getWidth(replacement.text(), originalSize);
-            // Keep the source point size. Fit long tokens by adjusting only their horizontal
-            // advance so their glyph height and the surrounding line's vertical rhythm stay intact.
-            if (isToken
-                    && replacementWidth > availableWidth && replacementWidth > 0) {
+            // Preserve the original PDF's horizontal text scaling. Source documents often
+            // compress field values independently of their point size (for example, Tz=74%).
+            if (!isToken && replacement.originalWidth() > 0 && replacementWidth > 0) {
+                horizontalScale = replacement.originalWidth() / replacementWidth;
+            } else if (!isToken && replacement.widthLimit() > 0 && replacementWidth > replacement.widthLimit()) {
+                // Older location metadata only has the token's maximum occupied width.
+                horizontalScale = replacement.widthLimit() / replacementWidth;
+            } else if (isToken && replacementWidth > availableWidth && replacementWidth > 0) {
+                // Keep newly generated tokens inside the replaced field.
                 horizontalScale = Math.max(0.55f, availableWidth / replacementWidth);
             }
         }
@@ -390,6 +474,13 @@ public class PdfTextSubstitutionService {
         return new Rectangle(left, bottom, Math.max(0.1f, right - left), Math.max(0.1f, top - bottom));
     }
 
+    private float projectedWidth(List<PdfTextSpan> spans) {
+        PdfTextSpan first = spans.get(0);
+        Rectangle bounds = boundsOf(spans);
+        return bounds.getWidth() * Math.abs(first.baselineA())
+                + bounds.getHeight() * Math.abs(first.baselineB());
+    }
+
     private String normalize(String value) {
         String compatible = Normalizer.normalize(value, Normalizer.Form.NFKC).toLowerCase(Locale.ROOT);
         StringBuilder normalized = new StringBuilder(compatible.length());
@@ -404,5 +495,6 @@ public class PdfTextSubstitutionService {
         return value != null && value.matches("\\[[A-Z][A-Z0-9_]*_\\d{3,}]");
     }
 
-    private record Replacement(List<PdfTextSpan> spans, String target, String text, float fontSize) { }
+    private record Replacement(List<PdfTextSpan> spans, String target, String text,
+                               float fontSize, float widthLimit, float originalWidth) { }
 }
