@@ -1,7 +1,11 @@
 package com.safedocs.document;
 
 import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.colors.Color;
 import com.itextpdf.kernel.colors.ColorConstants;
+import com.itextpdf.kernel.colors.DeviceCmyk;
+import com.itextpdf.kernel.colors.DeviceGray;
+import com.itextpdf.kernel.colors.DeviceRgb;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfDictionary;
 import com.itextpdf.kernel.pdf.PdfObject;
@@ -140,7 +144,7 @@ public class PdfTextSubstitutionService {
         List<Replacement> replacements = new ArrayList<>();
         for (String line : info.lines().skip(1).toList()) {
             String[] fields = line.split("\\|", -1);
-            if (fields.length < 9 || fields.length > 12) continue;
+            if (fields.length < 9 || fields.length > 13) continue;
             try {
                 String token = new String(Base64.getUrlDecoder().decode(fields[0]), java.nio.charset.StandardCharsets.UTF_8);
                 String original = substitutions.get(token);
@@ -155,9 +159,12 @@ public class PdfTextSubstitutionService {
                 boolean version2 = fields.length == 10 && "v2".equals(fields[8]);
                 boolean version3 = fields.length == 11 && "v3".equals(fields[8]);
                 boolean version4 = fields.length == 12 && "v4".equals(fields[8]);
-                String fontResourceName = version2 || version3 || version4 ? decodeMetadataField(fields[9]) : null;
-                String fontBaseName = version3 || version4 ? decodeMetadataField(fields[10]) : null;
-                float originalWidth = version4 ? Float.parseFloat(fields[11]) : 0f;
+                boolean version5 = fields.length == 13 && "v5".equals(fields[8]);
+                String fontResourceName = version2 || version3 || version4 || version5
+                        ? decodeMetadataField(fields[9]) : null;
+                String fontBaseName = version3 || version4 || version5 ? decodeMetadataField(fields[10]) : null;
+                float originalWidth = version4 || version5 ? Float.parseFloat(fields[11]) : 0f;
+                Color originalColor = version5 ? decodeColor(decodeMetadataField(fields[12])) : null;
                 List<PdfTextSpan> occurrence = new ArrayList<>();
                 for (PdfTextSpan span : spans) {
                     if (span.pageNumber() != page) continue;
@@ -172,12 +179,15 @@ public class PdfTextSubstitutionService {
                 if (!occurrence.isEmpty()) {
                     PdfFont originalFont = findStoredFont(pdf, page, fontResourceName, fontBaseName,
                             occurrence.get(0).font(), original);
-                    if (originalFont != null) {
+                    if (originalFont != null || originalColor != null) {
                         List<PdfTextSpan> restoredSpans = new ArrayList<>(occurrence.size());
                         for (PdfTextSpan span : occurrence) {
                             restoredSpans.add(new PdfTextSpan(span.pageNumber(), span.text(), span.rectangle(),
                                     span.baselineX(), span.baselineY(), span.baselineA(), span.baselineB(),
-                                    originalFont, fontSize, span.color(), fontResourceName, fontBaseName));
+                                    originalFont == null ? span.font() : originalFont,
+                                    fontSize > 0 ? fontSize : span.fontSize(),
+                                    originalColor == null ? span.color() : originalColor,
+                                    fontResourceName, fontBaseName));
                         }
                         occurrence = restoredSpans;
                     }
@@ -257,16 +267,53 @@ public class PdfTextSubstitutionService {
             info.append('\n').append(token).append('|').append(first.pageNumber())
                     .append('|').append(first.baselineX()).append('|').append(first.baselineY())
                     .append('|').append(first.baselineA()).append('|').append(first.baselineB())
-                    .append('|').append(projectedLength).append('|').append(first.fontSize()).append('|').append("v4")
+                    .append('|').append(projectedLength).append('|').append(first.fontSize()).append('|').append("v5")
                     .append('|').append(Base64.getUrlEncoder().withoutPadding().encodeToString(
                             (first.fontResourceName() == null ? "" : first.fontResourceName())
                                     .getBytes(java.nio.charset.StandardCharsets.UTF_8)))
                     .append('|').append(Base64.getUrlEncoder().withoutPadding().encodeToString(
                             (first.fontBaseName() == null ? "" : first.fontBaseName())
                                     .getBytes(java.nio.charset.StandardCharsets.UTF_8)))
-                    .append('|').append(originalWidth);
+                    .append('|').append(originalWidth)
+                    .append('|').append(Base64.getUrlEncoder().withoutPadding().encodeToString(
+                            encodeColor(first.color()).getBytes(java.nio.charset.StandardCharsets.UTF_8)));
         }
         return info.toString();
+    }
+
+    private String encodeColor(Color color) {
+        if (color == null) return "";
+        float[] values = color.getColorValue();
+        if (values == null || values.length == 0) return "";
+        PdfObject colorSpace = color.getColorSpace().getPdfObject();
+        String kind;
+        if (PdfName.DeviceGray.equals(colorSpace) && values.length == 1) kind = "g";
+        else if (PdfName.DeviceRGB.equals(colorSpace) && values.length == 3) kind = "rgb";
+        else if (PdfName.DeviceCMYK.equals(colorSpace) && values.length == 4) kind = "cmyk";
+        else if (values.length == 1) kind = "g";
+        else if (values.length == 3) kind = "rgb";
+        else if (values.length == 4) kind = "cmyk";
+        else return "";
+        StringBuilder encoded = new StringBuilder(kind);
+        for (float value : values) encoded.append(':').append(value);
+        return encoded.toString();
+    }
+
+    private Color decodeColor(String encoded) {
+        if (encoded == null || encoded.isBlank()) return null;
+        String[] fields = encoded.split(":");
+        try {
+            return switch (fields[0]) {
+                case "g" -> fields.length == 2 ? new DeviceGray(Float.parseFloat(fields[1])) : null;
+                case "rgb" -> fields.length == 4 ? new DeviceRgb(Float.parseFloat(fields[1]),
+                        Float.parseFloat(fields[2]), Float.parseFloat(fields[3])) : null;
+                case "cmyk" -> fields.length == 5 ? new DeviceCmyk(Float.parseFloat(fields[1]),
+                        Float.parseFloat(fields[2]), Float.parseFloat(fields[3]), Float.parseFloat(fields[4])) : null;
+                default -> null;
+            };
+        } catch (NumberFormatException exception) {
+            return null;
+        }
     }
 
     private List<Replacement> locateReplacements(List<PdfTextSpan> sourceSpans,

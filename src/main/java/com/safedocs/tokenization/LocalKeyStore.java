@@ -69,12 +69,19 @@ public class LocalKeyStore {
 
         byte[] bytes = Files.readAllBytes(file);
         String contents = new String(bytes, StandardCharsets.UTF_8);
+        if (contents.isBlank()) {
+            // Treat empty/whitespace-only files as an empty store and normalize them to JSON.
+            writeDocuments(documents);
+            return documents;
+        }
         if (contents.startsWith(ENCRYPTED_HEADER)) {
             byte[] protectedData = decodeProtectedData(contents.substring(ENCRYPTED_HEADER.length()));
             byte[] plain = null;
             try {
                 plain = Crypt32Util.cryptUnprotectData(protectedData, WinCrypt.CRYPTPROTECT_UI_FORBIDDEN);
                 LinkedHashMap<String, StoredDocument> loadedDocuments = parseDocuments(new String(plain, StandardCharsets.UTF_8));
+                // Older versions protected the store with DPAPI. Rewrite it in the
+                // current readable JSON format so mappings can be used directly.
                 writeDocuments(loadedDocuments);
                 return loadedDocuments;
             } catch (RuntimeException exception) {
@@ -89,7 +96,10 @@ public class LocalKeyStore {
             writeDocuments(documents);
             return documents;
         }
-        return parseDocuments(contents);
+        LinkedHashMap<String, StoredDocument> loadedDocuments = parseDocuments(contents);
+        // Normalize older readable key files as soon as they are read.
+        writeDocuments(loadedDocuments);
+        return loadedDocuments;
     }
 
     private LinkedHashMap<String, StoredDocument> parseDocuments(String contents) throws IOException {
@@ -148,7 +158,9 @@ public class LocalKeyStore {
         Path target = desktop.resolve(FILE_NAME);
         if (Files.exists(target) && Files.size(target) > 0) {
             String existing = Files.readString(target, StandardCharsets.UTF_8);
-            if (!existing.startsWith(LEGACY_HEADER) && !existing.startsWith(ENCRYPTED_HEADER)) {
+            if (!existing.isBlank()
+                    && !existing.startsWith(LEGACY_HEADER)
+                    && !existing.startsWith(ENCRYPTED_HEADER)) {
                 JsonNode root;
                 try {
                     root = objectMapper.readTree(existing);
@@ -173,8 +185,6 @@ public class LocalKeyStore {
                 + "}\n";
         Path temporary = Files.createTempFile(desktop, ".safedocs-key-", ".tmp");
         try {
-            // Write readable JSON. Existing DPAPI-protected files remain readable and are
-            // converted to this plaintext format the next time the mappings are saved.
             Files.writeString(temporary, json, StandardCharsets.UTF_8);
             try {
                 Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);

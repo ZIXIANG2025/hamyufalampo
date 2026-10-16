@@ -85,15 +85,30 @@ public class DashboardController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported AI detection category.");
         }
 
+        String text;
         try {
-            String text = textExtractor.extractText(file.getBytes());
+            text = textExtractor.extractText(file.getBytes());
             if (text.isBlank()) {
                 throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                         "No extractable text was found. Scanned/image PDFs require a local OCR engine.");
             }
+        } catch (ResponseStatusException exception) {
+            throw exception;
+        } catch (IOException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Unable to read the uploaded PDF. Ensure it is valid and not password-protected.");
+        }
+
+        try {
             var detectedEntities = detector.analyzeText(text, selectedPolicies);
             String documentId = java.util.UUID.randomUUID().toString();
-            List<LocalKeyStore.StoredDocument> savedDocuments = localKeyStore.loadAll();
+            List<LocalKeyStore.StoredDocument> savedDocuments;
+            try {
+                savedDocuments = localKeyStore.loadAll();
+            } catch (IOException keyException) {
+                throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                        "The local mapping file could not be read or decrypted.");
+            }
             String tokenNamespace = uniqueTokenNamespace(savedDocuments, documentId);
             TokenizedDocument tokenized = tokenizationEngine.tokenize(text, detectedEntities, tokenNamespace);
             try {
@@ -117,9 +132,6 @@ public class DashboardController {
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                     .cacheControl(CacheControl.noStore())
                     .body(exception.getMessage());
-        } catch (IOException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Unable to read the uploaded PDF. Ensure it is valid and not password-protected.");
         }
     }
 

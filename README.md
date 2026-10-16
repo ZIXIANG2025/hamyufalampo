@@ -4,10 +4,10 @@ SafeDocs extracts text from text-based PDFs, uses context-aware AI detection for
 
 ## Privacy model
 
-- PDF text extraction and token generation run in the SafeDocs Spring Boot process. The PDF is not persisted by the application. The token mapping is saved as readable JSON in `Desktop\\Tester1.txt` and is automatically deleted after successful restoration using that matching key. Existing DPAPI-protected mapping files remain readable and are converted to plaintext JSON the next time they are saved.
+- PDF text extraction and token generation run in the SafeDocs Spring Boot process. The PDF is not persisted by the application. The token mapping is saved as readable JSON in `Desktop\\Tester1.txt` and is automatically deleted after successful restoration using that matching key. Older DPAPI-protected mapping files are decrypted and migrated to readable JSON when read.
 - AI detection sends extracted document text to the configured model endpoint. A cloud endpoint receives that text; use a trusted private endpoint for sensitive documents.
-- The token mapping contains the original sensitive values. It is returned to the local browser and held in page memory, and is also stored in readable form in `Desktop\\Tester1.txt`. Protect this file like the original document. For layout-preserving PDF output, the browser sends the selected PDF and mapping only to this local SafeDocs service; they are not sent to the AI provider during PDF substitution.
-- The optional downloaded JSON key is plaintext and must be protected like the original document; SafeDocs cannot automatically remove copies saved elsewhere. Token substitution is reversible pseudonymization, not cryptographic encryption.
+- The token mapping contains the original sensitive values. It is returned to the local browser and held in page memory, and is stored as readable text in `Desktop\\Tester1.txt`. For layout-preserving PDF output, the browser sends the selected PDF and mapping only to this local SafeDocs service; they are not sent to the AI provider during PDF substitution.
+- Token substitution is reversible pseudonymization rather than cryptographic encryption of the PDF contents.
 - Scanned/image-only PDFs are rejected because this version does not include an OCR engine.
 - Provider request/response bodies and document content are excluded from application logs.
 
@@ -47,9 +47,9 @@ Set `GEMINI_MODEL` and `GEMINI_BASE_URL` to select an available model and endpoi
 
 1. Choose a text-based PDF.
 2. Select the sensitive categories for context-aware detection.
-3. Tokenize the extracted text. The service returns sanitized text and saves a readable JSON mapping key to `Desktop\\Tester1.txt`. Downloading the tokenized PDF removes sensitive glyphs from the original page and draws the token at that position, preserving the rest of the page design.
+3. Tokenize the extracted text. The service returns sanitized text and saves a readable JSON mapping to `Desktop\\Tester1.txt`. Downloading the tokenized PDF removes sensitive glyphs from the original page and draws the token at that position, preserving the rest of the page design.
 4. Copy the sanitized text to an external AI service if desired.
-5. Save the external AI report as a PDF and select it in the restore panel. SafeDocs unlocks `Tester1.txt` automatically, or you can upload a JSON key. Downloading the restored report replaces tokens inside that uploaded PDF while preserving its page design, then deletes `Tester1.txt` if that was the matching key.
+5. Save the external AI report as a PDF and select it in the restore panel. SafeDocs decrypts the matching local mapping automatically. Downloading the restored report replaces tokens inside that uploaded PDF while preserving its page design, then removes only that document’s mapping.
 
 The dashboard runs at `http://localhost:8080`. PDF substitution uses the local routes `POST /api/safedocs/tokenize-pdf` and `POST /api/safedocs/restore-pdf`; the `mapping` field is submitted only to the local application.
 

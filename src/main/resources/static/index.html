@@ -10,15 +10,15 @@
         *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 10% 0,#e4ebff 0,transparent 34rem),radial-gradient(ellipse at 96% 48%,#dff3ef 0,transparent 28rem),#f5f8fc}button,input,textarea{font:inherit}.shell{width:min(1100px,calc(100% - 40px));margin:auto}
         header{height:82px;display:flex;justify-content:space-between;align-items:center}.brand{display:flex;align-items:center;gap:11px;font-weight:780;font-size:19px;letter-spacing:-.04em}.brand-mark{height:36px;width:36px;display:grid;place-items:center;background:var(--navy);color:white;border-radius:12px}.brand-mark svg{width:20px}.secure{display:flex;align-items:center;gap:8px;padding:9px 13px;border:1px solid #cce5dd;border-radius:99px;background:#f2faf7;color:#246a59;font-size:11px;font-weight:700}.dot{width:7px;height:7px;border-radius:50%;background:#17a37f;box-shadow:0 0 0 4px #17a37f1c}
         main{padding:46px 0 68px}.intro{max-width:780px;margin:0 auto 38px;text-align:center}.eyebrow{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--blue);font-weight:800;margin:0 0 15px}h1{font-size:clamp(38px,6vw,68px);line-height:1.02;letter-spacing:-.065em;margin:0;font-weight:780}.accent{color:var(--blue)}.subtitle{max-width:650px;margin:18px auto 0;font-size:15px;line-height:1.8;color:var(--muted)}
-        .workspace{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px;align-items:start}.panel{border:1px solid var(--line);background:var(--white);border-radius:19px;box-shadow:0 18px 54px #2039580b}.main-panel{padding:25px}.heading{display:flex;justify-content:space-between;align-items:center;margin:0 0 17px}.heading h2,.side h2{margin:0;font-size:14px;letter-spacing:-.02em}.step{display:inline-grid;place-items:center;width:23px;height:23px;border-radius:8px;margin-right:8px;background:#edf2ff;color:var(--blue);font-size:11px;font-weight:800}.hint{font-size:10px;color:#8795a8}
+        .workspace{display:block;max-width:940px;margin:auto}.panel{border:1px solid var(--line);background:var(--white);border-radius:19px;box-shadow:0 18px 54px #2039580b}.main-panel{padding:25px}.heading{display:flex;justify-content:space-between;align-items:center;margin:0 0 17px}.heading h2,.side h2{margin:0;font-size:14px;letter-spacing:-.02em}.step{display:inline-grid;place-items:center;width:23px;height:23px;border-radius:8px;margin-right:8px;background:#edf2ff;color:var(--blue);font-size:11px;font-weight:800}.hint{font-size:10px;color:#8795a8}
         .drop{position:relative;min-height:205px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px;border:1.5px dashed #bac9db;border-radius:15px;background:linear-gradient(145deg,#fbfdff,#f6f8ff);text-align:center;cursor:pointer;transition:.18s}.drop:hover,.drop.dragging{border-color:var(--blue);background:#f1f5ff}.upload{height:48px;width:48px;display:grid;place-items:center;color:var(--blue);background:#eaf0ff;border-radius:16px}.upload svg{width:23px}.drop-title{margin:13px 0 4px;font-size:13px;font-weight:750}.drop-copy{margin:0;color:var(--muted);font-size:11px}.browse{color:var(--blue);font-weight:700}.file{display:none;width:min(100%,380px);align-items:center;gap:10px;margin-top:15px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:#fff;text-align:left}.file-badge{width:32px;height:36px;display:grid;place-items:center;flex:none;background:#fff0f0;color:#d44d54;border-radius:8px;font-size:9px;font-weight:850}.file-info{min-width:0;flex:1}.file-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:700}.file-size{margin-top:3px;color:var(--muted);font-size:10px}.remove{border:0;background:none;color:#8795a8;font-size:19px;cursor:pointer}.hidden-input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
         .policies{margin-top:23px}.policy-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.option input{position:absolute;opacity:0}.option label{min-height:76px;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:12px;border:1px solid var(--line);border-radius:12px;background:white;cursor:pointer;transition:.16s}.option input:checked+label{border-color:#9fb4ff;background:#f4f7ff;box-shadow:inset 0 0 0 1px #d6e0ff}.option input:focus-visible+label{outline:3px solid #3567f544;outline-offset:2px}.policy-title{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:750}.icon{color:var(--blue);font-size:14px}.policy-copy{font-size:10px;line-height:1.45;color:var(--muted)}
-        .action{display:flex;align-items:center;gap:13px;margin-top:18px}.submit,.secondary{min-height:43px;display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:0 16px;border:0;border-radius:11px;background:var(--blue);color:#fff;box-shadow:0 8px 18px #3567f52b;font-size:11px;font-weight:750;cursor:pointer;transition:.16s}.submit:hover:not(:disabled),.secondary:hover:not(:disabled){background:#234fd2;transform:translateY(-1px)}.submit:disabled,.secondary:disabled{opacity:.52;cursor:not-allowed;box-shadow:none}.secondary{min-height:35px;padding:0 12px;background:#edf2ff;color:#3158c9;box-shadow:none}.secondary:hover:not(:disabled){background:#dfe7ff}.note{font-size:10px;color:#8391a3}.spinner{display:none;width:14px;height:14px;border:2px solid #ffffff66;border-top-color:white;border-radius:50%;animation:spin .7s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+        .action{display:flex;align-items:center;gap:13px;margin-top:18px}.submit,.secondary{min-height:43px;display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:0 16px;border:0;border-radius:11px;background:var(--blue);color:#fff;box-shadow:0 8px 18px #3567f52b;font-size:11px;font-weight:750;cursor:pointer;transition:.16s}.submit:hover:not(:disabled),.secondary:hover:not(:disabled){background:#234fd2;transform:translateY(-1px)}.submit:disabled,.secondary:disabled{opacity:.52;cursor:not-allowed;box-shadow:none}.secondary{min-height:30px;padding:0 10px;background:#edf2ff;color:#3158c9;box-shadow:none;font-size:10px;border-radius:9px}.download-pdf{min-height:28px;padding:0 9px;font-size:9px}.secondary:hover:not(:disabled){background:#dfe7ff}.note{font-size:10px;color:#8391a3}.spinner{display:none;width:14px;height:14px;border:2px solid #ffffff66;border-top-color:white;border-radius:50%;animation:spin .7s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
         .side{padding:22px}.side h2{margin-bottom:19px}.feature{display:grid;grid-template-columns:32px 1fr;gap:10px;margin-bottom:17px}.feature-icon{width:31px;height:31px;display:grid;place-items:center;color:var(--blue);background:#eef2ff;border-radius:10px}.feature-icon svg{width:16px}.feature-title{margin:1px 0 4px;font-size:11px;font-weight:750}.feature-copy{margin:0;color:var(--muted);font-size:10px;line-height:1.55}.privacy{display:flex;gap:9px;margin-top:19px;padding:12px;border:1px solid #dbece6;border-radius:11px;background:#f5fbf8}.privacy svg{width:16px;height:16px;flex:none;color:var(--teal)}.privacy p{margin:0;color:#58766b;font-size:10px;line-height:1.65}
         .result{display:none;margin-top:15px;padding:12px 14px;border:1px solid;border-radius:10px;font-size:11px;line-height:1.55}.result.success{display:block;color:#12694f;border-color:#cdebe0;background:#f3fbf7}.result.error{display:block;color:#ad3543;border-color:#f0d3d6;background:#fff7f7}
-        .outputs{display:none;grid-template-columns:minmax(0,1.2fr) minmax(250px,.8fr);gap:12px;margin-top:21px}.output-card,.restore{padding:16px;border:1px solid var(--line);border-radius:14px;background:#fbfdff}.output-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}.output-head h3,.restore h3{margin:0;font-size:12px}.output-head p,.restore-copy{margin:5px 0 0;color:var(--muted);font-size:10px;line-height:1.5}.sanitized{width:100%;min-height:210px;max-height:420px;resize:vertical;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:#253750;font-size:11px;line-height:1.65;white-space:pre-wrap;overflow:auto}.key-details{border:1px solid var(--line);border-radius:10px;background:#fff}.key-details summary{padding:11px 12px;color:#253750;font-size:11px;font-weight:700;cursor:pointer}.key-json{max-height:240px;overflow:auto;margin:0;padding:12px;border-top:1px solid var(--line);color:#3158c9;font:10px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}.key-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.restore{margin-top:16px}.restore h3{font-size:13px}.restore-input{display:block;width:100%;min-height:120px;margin-top:12px;padding:12px;resize:vertical;border:1px solid var(--line);border-radius:10px;background:#fff;color:#253750;font-size:11px;line-height:1.65}.restore-input:focus,.sanitized:focus{outline:3px solid #3567f533;border-color:#9fb4ff}.key-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:11px 0;color:var(--muted);font-size:10px}.key-upload input{max-width:100%;font-size:10px}.restore-action{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}.restored-output{display:none;margin-top:14px;padding:14px;border:1px solid #bfe5d5;border-radius:11px;background:#f3fbf7;color:#163f36;font-size:12px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}.restored-output mark{padding:1px 3px;border-radius:4px;background:#d4f2e5;color:#164b3c}.restored-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.restored-head strong{font-size:11px}.hidden{display:none!important}
+        .outputs{display:none;grid-template-columns:1fr;gap:12px;margin-top:21px}.output-card,.restore{padding:16px;border:1px solid var(--line);border-radius:14px;background:#fbfdff}.output-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}.output-head h3,.restore h3{margin:0;font-size:12px}.output-head p,.restore-copy{margin:5px 0 0;color:var(--muted);font-size:10px;line-height:1.5}.sanitized{width:100%;min-height:210px;max-height:420px;resize:vertical;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:#253750;font-size:11px;line-height:1.65;white-space:pre-wrap;overflow:auto}.key-details{border:1px solid var(--line);border-radius:10px;background:#fff}.key-details summary{padding:11px 12px;color:#253750;font-size:11px;font-weight:700;cursor:pointer}.key-json{max-height:240px;overflow:auto;margin:0;padding:12px;border-top:1px solid var(--line);color:#3158c9;font:10px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}.key-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.restore{margin-top:16px}.restore h3{font-size:13px}.restore-input{display:block;width:100%;min-height:120px;margin-top:12px;padding:12px;resize:vertical;border:1px solid var(--line);border-radius:10px;background:#fff;color:#253750;font-size:11px;line-height:1.65}.restore-input:focus,.sanitized:focus{outline:3px solid #3567f533;border-color:#9fb4ff}.key-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:11px 0;color:var(--muted);font-size:10px}.key-upload input{max-width:100%;font-size:10px}.restore-action{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}.restored-output{display:none;margin-top:14px;padding:14px;border:1px solid #bfe5d5;border-radius:11px;background:#f3fbf7;color:#163f36;font-size:12px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}.restored-output mark{padding:1px 3px;border-radius:4px;background:#d4f2e5;color:#164b3c}.restored-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.restored-head strong{font-size:11px}.hidden{display:none!important}
         .restore-file-heading{margin:17px 0 10px}.restore-file-heading h4{margin:0;font-size:12px}.restore-drop,.key-drop{min-height:205px}
-        footer{padding:0 0 24px;text-align:center;color:#99a5b5;font-size:9px}@media(max-width:760px){main{padding-top:28px}.workspace{grid-template-columns:1fr}.side{display:grid;grid-template-columns:1fr 1fr;gap:11px 16px}.side h2,.privacy{grid-column:1/-1}.side h2{margin-bottom:2px}.feature{margin-bottom:2px}.privacy{margin-top:4px}.outputs{grid-template-columns:1fr}}@media(max-width:480px){.shell{width:calc(100% - 24px)}header{height:67px}.secure{padding:8px 9px;font-size:9px}.intro{margin-bottom:24px}.subtitle{font-size:13px}.main-panel{padding:16px}.policy-list{grid-template-columns:1fr}.option label{min-height:60px}.side{grid-template-columns:1fr}.side h2,.privacy{grid-column:auto}.action{align-items:flex-start;flex-direction:column}.output-head{flex-direction:column}}
+        footer{padding:0 0 24px;text-align:center;color:#99a5b5;font-size:9px}@media(max-width:760px){main{padding-top:28px}.workspace{grid-template-columns:1fr}.outputs{grid-template-columns:1fr}}@media(max-width:480px){.shell{width:calc(100% - 24px)}header{height:67px}.secure{padding:8px 9px;font-size:9px}.intro{margin-bottom:24px}.subtitle{font-size:13px}.main-panel{padding:16px}.policy-list{grid-template-columns:1fr}.option label{min-height:60px}.side{grid-template-columns:1fr}.side h2,.privacy{grid-column:auto}.action{align-items:flex-start;flex-direction:column}.output-head{flex-direction:column}}
     </style>
 </head>
 <body>
@@ -35,7 +35,7 @@
         </section>
         <div class="workspace">
             <section class="panel main-panel" aria-label="Privacy-protecting PDF workspace">
-                <div class="heading"><h2><span class="step">1</span>Choose PDFs to encrypt</h2><span class="hint">Up to 20 MB each</span></div>
+                <div class="heading"><h2><span class="step">1</span>Choose PDFs to protect</h2><span class="hint">Up to 20 MB each</span></div>
                 <input class="hidden-input" id="fileInput" type="file" accept="application/pdf,.pdf" multiple>
                 <div class="drop" id="dropzone" role="button" tabindex="0" aria-label="Choose or drop a PDF file">
                     <div class="upload" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 15.5V4.75m0 0L8.25 8.5M12 4.75l3.75 3.75M5.5 14.25v3.5a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
@@ -43,7 +43,7 @@
                     <div class="file" id="fileCard"><div class="file-badge">PDF</div><div class="file-info"><div class="file-name" id="fileName"></div><div class="file-size" id="fileSize"></div></div><button class="remove" id="removeFile" type="button" aria-label="Remove file">×</button></div>
                 </div>
                 <div class="policies">
-                    <div class="heading"><h2><span class="step">2</span>Choose what AI should find</h2><span class="hint">Select one or more</span></div>
+                    <div class="heading"><h2><span class="step">2</span>Choose what AI should find</h2><span class="hint">All four selected by default</span></div>
                     <div class="policy-list">
                         <div class="option"><input id="policy-person" type="checkbox" name="policies" value="PERSONAL" checked><label for="policy-person"><span class="policy-title"><span class="icon">✳</span>People & identity</span><span class="policy-copy">Names, national IDs, passports, signatures and account identifiers</span></label></div>
                         <div class="option"><input id="policy-contact" type="checkbox" name="policies" value="CONTACT" checked><label for="policy-contact"><span class="policy-title"><span class="icon">⌕</span>Contact & location</span><span class="policy-copy">Phone numbers, emails, home addresses and precise locations</span></label></div>
@@ -51,43 +51,33 @@
                         <div class="option"><input id="policy-sensitive" type="checkbox" name="policies" value="SENSITIVE" checked><label for="policy-sensitive"><span class="policy-title"><span class="icon">✦</span>Other sensitive data</span><span class="policy-copy">Health details, birth dates, gender and sensitive information identified by context</span></label></div>
                     </div>
                 </div>
-                <div class="action"><button class="submit" id="submitButton" type="button" disabled><span class="spinner" id="spinner"></span><svg id="submitIcon" viewBox="0 0 24 24" fill="none"><path d="M12 3.75v10.5m0 0 4-4m-4 4-4-4M5 15.75v3a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="buttonText">Tokenize & generate safe text (Encrypt)</span></button><span class="note">Tokenization is reversible substitution, not cryptographic encryption. The local key is held in page memory.</span></div>
+                <div class="action"><button class="submit" id="submitButton" type="button" disabled><span class="spinner" id="spinner"></span><svg id="submitIcon" viewBox="0 0 24 24" fill="none"><path d="M12 3.75v10.5m0 0 4-4m-4 4-4-4M5 15.75v3a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span id="buttonText">Protect selected PDFs</span></button><span class="note">Sensitive text is replaced with tokens; the original values are kept in readable Desktop\\Tester1.txt for direct restoration. Extracted text is sent to your configured AI endpoint.</span></div>
                 <div class="result" id="result" role="status" aria-live="polite"></div>
 
                 <section class="outputs" id="outputs" aria-label="Tokenized document outputs">
                     <article class="output-card">
-                        <div class="output-head"><div><h3>Sanitized Text for External AI</h3><p>Download a tokenized copy that retains the original PDF page design, or copy the extracted text for external AI analysis.</p></div><div class="key-actions"><button class="secondary" id="downloadSanitized" type="button">Download Tokenized PDF</button><button class="secondary" id="copySanitized" type="button">Copy Sanitized Text</button></div></div>
+                        <div class="output-head"><div><h3>Sanitized Text for External AI</h3><p>Your original PDF stays unchanged. Download a protected copy that retains its page design, or copy the sanitized text.</p></div><div class="key-actions"><button class="secondary download-pdf" id="downloadSanitized" type="button">Download Tokenized PDF</button><button class="secondary" id="copySanitized" type="button">Copy Sanitized Text</button></div></div>
                         <textarea class="sanitized" id="sanitizedText" readonly aria-label="Sanitized text preview"></textarea>
                     </article>
-                    <article class="output-card">
-                        <div class="output-head"><div><h3>Local Key Mapping Dictionary</h3><p>Saved mappings are readable JSON in Desktop\Tester1.txt. The file contains the original sensitive values.</p></div></div>
-                        <details class="key-details"><summary>Preview local mapping JSON</summary><pre class="key-json" id="mappingPreview"></pre></details>
-                        <div class="key-actions"><button class="secondary" id="downloadKey" type="button">Download Local Key (JSON)</button></div>
-                    </article>
+
                 </section>
 
                 <section class="restore" aria-labelledby="restoreTitle">
                     <h3 id="restoreTitle"><span class="step">3</span>Decrypt & Restore AI Analysis</h3>
-                    <p class="restore-copy">Choose the tokenized PDF. SafeDocs finds its saved mapping in Desktop\Tester1.txt. After a successful decrypt, SafeDocs removes only that document’s mapping. Other mappings and Tester1.txt remain available.</p>
-                    <div class="heading restore-file-heading"><h4><span class="step">1</span>Choose PDFs to decrypt</h4><span class="hint">Up to 20 MB each</span></div>
+                    <p class="restore-copy">Choose a tokenized PDF. SafeDocs decrypts your locally protected mapping for this Windows account and removes only that document’s mapping after a successful restore.</p>
+                    <div class="heading restore-file-heading"><h4><span class="step">1</span>Choose PDFs to restore</h4><span class="hint">Up to 20 MB each</span></div>
                     <input class="hidden-input" id="tokenizedReportFile" type="file" accept="application/pdf,.pdf" multiple>
-                    <div class="drop restore-drop" id="restoreDropzone" role="button" tabindex="0" aria-label="Choose or drop an encrypted PDF">
+                    <div class="drop restore-drop" id="restoreDropzone" role="button" tabindex="0" aria-label="Choose or drop a tokenized PDF">
                         <div class="upload" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 15.5V4.75m0 0L8.25 8.5M12 4.75l3.75 3.75M5.5 14.25v3.5a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-3.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-                        <p class="drop-title">Drop one or more encrypted PDFs here</p><p class="drop-copy">or <span class="browse">browse files</span> to select multiple documents</p>
-                        <div class="file" id="restoreFileCard"><div class="file-badge">PDF</div><div class="file-info"><div class="file-name" id="restoreFileName"></div><div class="file-size" id="restoreFileSize"></div></div><button class="remove" id="removeTokenizedFile" type="button" aria-label="Remove encrypted PDF">×</button></div>
+                        <p class="drop-title">Drop one or more tokenized PDFs here</p><p class="drop-copy">or <span class="browse">browse files</span> to select multiple documents</p>
+                        <div class="file" id="restoreFileCard"><div class="file-badge">PDF</div><div class="file-info"><div class="file-name" id="restoreFileName"></div><div class="file-size" id="restoreFileSize"></div></div><button class="remove" id="removeTokenizedFile" type="button" aria-label="Remove tokenized PDF">×</button></div>
                     </div>
-                    <div class="restore-action"><button class="submit" id="restoreButton" type="button">Decrypt & Restore Identity</button><span class="note" id="keyState">Looking for protected mappings in Desktop\Tester1.txt…</span></div>
+                    <div class="restore-action"><button class="submit" id="restoreButton" type="button">Restore Identity</button><span class="note" id="keyState">Checking saved local mappings…</span></div>
                     <div class="restored-output" id="restoredOutput" aria-live="polite"><div class="restored-head"><strong>Restored report</strong><div class="key-actions"><button class="secondary" id="downloadRestored" type="button">Download Restored Report</button><button class="secondary" id="copyRestored" type="button">Copy Restored Report</button></div></div><div id="restoredText"></div></div>
                 </section>
             </section>
 
-            <aside class="panel side">
-                <h2>Privacy by design</h2>
-                <div class="feature"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5 19 6v5.1c0 4.25-2.8 7.65-7 9.4-4.2-1.75-7-5.15-7-9.4V6l7-2.5Z" stroke="currentColor" stroke-width="1.6"/><path d="m9 11.8 2 2 4-4.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><p class="feature-title">Context-aware detection</p><p class="feature-copy">The selected categories guide semantic detection of identity and sensitive details in document context.</p></div></div>
-                <div class="feature"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4.5v15m0-15 4 4m-4-4-4 4m-3.5 5v5m15-5v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div><div><p class="feature-title">Reversible tokenization without key exposure</p><p class="feature-copy">Sensitive spans become consistent tokens. The key stays in page memory unless you choose to download it.</p></div></div>
-                <div class="feature"><div class="feature-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4.5 12a7.5 7.5 0 1 1 2.2 5.3M4.5 17v-4h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8.5v3.75l2.5 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><p class="feature-title">100% local key restoration</p><p class="feature-copy">The key and PDF are processed only by this local SafeDocs service; no restoration data is sent to an external AI.</p></div></div>
-                <div class="privacy"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5 19 6v5.1c0 4.25-2.8 7.65-7 9.4-4.2-1.75-7-5.15-7-9.4V6l7-2.5Z" stroke="currentColor" stroke-width="1.6"/><path d="m9 11.8 2 2 4-4.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><p>Tokenization and restoration keys are not persisted by SafeDocs. AI detection sends extracted document text to your configured model endpoint. PDF substitution uses the original PDF locally and retains its page design; the mapping is sent only to this local SafeDocs service.</p></div>
-            </aside>
+
         </div>
     </main>
     <footer>SafeDocs · AI Secured · Innovation Without Exposure</footer>
@@ -121,8 +111,7 @@
       activeMapping={};
       document.getElementById('outputs').style.display='none';
       document.getElementById('sanitizedText').value='';
-      document.getElementById('mappingPreview').textContent='';
-      if(!desktopKeyLoaded)document.getElementById('keyState').textContent='No saved mapping found in Desktop\\Tester1.txt.';
+      if(!desktopKeyLoaded)document.getElementById('keyState').textContent='No saved mapping found locally.';
     }
     function setFiles(files) {
       result.className='result';result.textContent='';clearOutput();selectedFiles=[];encryptedJobs=[];fileCard.style.display='none';submitButton.disabled=true;
@@ -142,12 +131,8 @@
       if(tooLarge){showError(`${tooLarge.name} is empty or exceeds 20 MB.`);restoreInput.value='';return}
       tokenizedReportFiles=chosen;document.getElementById('restoreFileName').textContent=chosen.map(file=>file.name).join(', ');document.getElementById('restoreFileSize').textContent=`${chosen.length} PDF(s) · ${formatSize(chosen.reduce((total,file)=>total+file.size,0))} total`;restoreFileCard.style.display='flex';result.className='result';result.textContent='';
     }
-    function setLoading(loading){submitButton.disabled=loading||!selectedFiles.length;document.getElementById('spinner').style.display=loading?'inline-block':'none';document.getElementById('submitIcon').style.display=loading?'none':'block';document.getElementById('buttonText').textContent=loading?'AI is detecting sensitive text…':'Tokenize & generate safe text (Encrypt)'}
+    function setLoading(loading){submitButton.disabled=loading||!selectedFiles.length;document.getElementById('spinner').style.display=loading?'inline-block':'none';document.getElementById('submitIcon').style.display=loading?'none':'block';document.getElementById('buttonText').textContent=loading?'AI is detecting sensitive text…':'Protect selected PDFs'}
     async function copyText(value,label){try{await navigator.clipboard.writeText(value);showSuccess(`${label} copied to clipboard.`)}catch(_){showError('Clipboard access failed. Select and copy the text manually.')}}
-    function downloadKey(){
-      const blob=new Blob([JSON.stringify(activeMapping,null,2)],{type:'application/json'});
-      const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='SafeDocs-local-key.json';document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
-    }
     async function downloadSubstitutedPdf(file,mapping,endpoint,filename,documentId=null){
       const form=new FormData();form.append('file',file);if(mapping)form.append('mapping',JSON.stringify(mapping));
       if(documentId)form.append('documentId',documentId);
@@ -173,19 +158,19 @@
     async function loadDesktopKey(){
       try{
         desktopDocuments=await fetchDesktopDocuments();
-        desktopKeyLoaded=desktopDocuments.length>0;document.getElementById('keyState').textContent=desktopKeyLoaded?`${desktopDocuments.length} readable mapping(s) found in Desktop\\Tester1.txt. Only the matching mapping is removed after restore.`:'No saved mappings found in Desktop\\Tester1.txt.';
+        desktopKeyLoaded=desktopDocuments.length>0;document.getElementById('keyState').textContent=desktopKeyLoaded?`${desktopDocuments.length} saved mapping(s) found locally. Only the matching mapping is removed after restore.`:'No saved mappings found locally.';
       }catch(error){desktopDocuments=[];desktopMapping={};restoreMapping={};desktopKeyLoaded=false;document.getElementById('keyState').textContent=error.message;}
     }
     async function downloadSanitized(){
-      if(!encryptedJobs.length){showError('Encrypt the selected PDFs first.');return}
+      if(!encryptedJobs.length){showError('Protect the selected PDFs first.');return}
       try{for(const job of encryptedJobs)await downloadSubstitutedPdf(job.file,job.mapping,'tokenize-pdf',`SafeDocs-tokenized-${job.file.name}`,job.documentId);showSuccess(`${encryptedJobs.length} tokenized PDF(s) downloaded.`);}
       catch(error){showError(error.message||'Could not create the tokenized PDFs.')}
     }
     function validateMapping(value,allowEmpty=false){
-      if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('The JSON key must be an object mapping tokens to original text.');
+      if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('The saved mapping is not valid.');
       const entries=Object.entries(value);
-      if(!entries.length&&!allowEmpty)throw new Error('The JSON key contains no token mappings.');
-      for(const [token,original] of entries){if(!/^\[[A-Z][A-Z0-9_]*_\d{3,}\]$/.test(token)||typeof original!=='string')throw new Error('The JSON key contains an invalid token mapping.')}
+      if(!entries.length&&!allowEmpty)throw new Error('The saved mapping contains no token values.');
+      for(const [token,original] of entries){if(!/^\[[A-Z][A-Z0-9_]*_\d{3,}\]$/.test(token)||typeof original!=='string')throw new Error('The saved mapping contains an invalid token value.')}
       return Object.fromEntries(entries);
     }
     function restoreReport(report,mapping){
@@ -232,14 +217,12 @@
         restoreMapping=activeMapping;desktopMapping=activeMapping;desktopKeyLoaded=Object.keys(activeMapping).length>0;
         await loadDesktopKey();
         document.getElementById('sanitizedText').value=sanitized.join('\n\n');
-        document.getElementById('mappingPreview').textContent=JSON.stringify(activeMapping,null,2);
         document.getElementById('outputs').style.display='grid';
-        document.getElementById('keyState').textContent=Object.keys(restoreMapping).length?`Mappings for ${encryptedJobs.length} document(s) saved in Desktop\\Tester1.txt.`:'No sensitive entities were detected; no local key was saved.';
+        document.getElementById('keyState').textContent=Object.keys(restoreMapping).length?`Saved mappings for ${encryptedJobs.length} document(s) in Tester1.txt.`:'No sensitive entities were detected; no local key was saved.';
         showSuccess(`${encryptedJobs.length} PDF(s) processed. ${Object.keys(activeMapping).length} unique token mappings were created.`);
       }catch(error){
         if(encryptedJobs.length){
           activeMapping=aggregateMapping;document.getElementById('sanitizedText').value=sanitized.join('\n\n');
-          document.getElementById('mappingPreview').textContent=JSON.stringify(activeMapping,null,2);
           document.getElementById('outputs').style.display='grid';
           showError(`${error.message||'Tokenization failed.'} ${encryptedJobs.length} PDF(s) finished; download those results before retrying.`);
         }else showError(error.message||'SafeDocs could not tokenize this PDF. Check the service and AI configuration.')
@@ -247,7 +230,6 @@
     });
     document.getElementById('copySanitized').addEventListener('click',()=>copyText(document.getElementById('sanitizedText').value,'Sanitized text'));
     document.getElementById('downloadSanitized').addEventListener('click',downloadSanitized);
-    document.getElementById('downloadKey').addEventListener('click',downloadKey);
     restoreDropzone.addEventListener('click',event=>{if(event.target.closest('#removeTokenizedFile'))return;restoreInput.click()});
     restoreDropzone.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();restoreInput.click()}});
     restoreInput.addEventListener('change',()=>setRestoreFiles(restoreInput.files));
@@ -258,34 +240,28 @@
     document.getElementById('restoreButton').addEventListener('click',async()=>{
       if(!tokenizedReportFiles.length){showError('Choose one or more tokenized analysis reports first.');return}
       try{
-        restoredJobs=[];let restoredParts=[];let allMappingsFullyRestored=true;
+        restoredJobs=[];let restoredParts=[];
         for(const file of tokenizedReportFiles){
           const match=await findMatchingDocument(file);const mapping=match.mapping;
           const report=await readReportFile(file);const restored=restoreReport(report,mapping);
           if(!restored.replacedCount||restored.replacedTokens.size<match.matchedTokenCount)throw new Error(`${file.name}: some saved tokens could not be fully restored. Its mapping was kept.`);
           restoredJobs.push({file,mapping,documentId:match.documentId});restoredParts.push(`===== ${file.name} =====\n${restored.text}`);
-          if(restored.replacedTokens.size<Object.keys(mapping).length)allMappingsFullyRestored=false;
         }
         restoredReport=restoredParts.join('\n\n');
         document.getElementById('restoredText').textContent=restoredReport;
         document.getElementById('restoredOutput').style.display='block';
-        if(allMappingsFullyRestored){
-          const consumedDocuments=new Set();
-          for(const job of restoredJobs){
-            if(consumedDocuments.has(job.documentId))continue;
-            const consumeForm=new FormData();consumeForm.append('documentId',job.documentId);consumeForm.append('mapping',JSON.stringify(job.mapping));
-            const consumeResponse=await fetch('/api/safedocs/consume-local-key',{method:'POST',body:consumeForm});
-            if(!consumeResponse.ok)throw new Error((await consumeResponse.text())||`Could not update Tester1.txt after restoring ${job.file.name}.`);
-            const consumeResult=await consumeResponse.json();if(!consumeResult.deleted)throw new Error(`The mapping for ${job.file.name} changed and was kept.`);
-            consumedDocuments.add(job.documentId);
-          }
-          await loadDesktopKey();
-          document.getElementById('keyState').textContent=`Restored ${restoredJobs.length} file(s); their mappings were removed from Tester1.txt.`;
-          showSuccess(`${restoredJobs.length} report(s) restored. Their mappings were removed.`);
-        } else {
-          document.getElementById('keyState').textContent='Some reports contain only part of their saved tokens. The corresponding mappings were kept in Tester1.txt.';
-          showSuccess(`${restoredJobs.length} report(s) restored. Partial mappings were kept for later use.`);
+        const consumedDocuments=new Set();
+        for(const job of restoredJobs){
+          if(consumedDocuments.has(job.documentId))continue;
+          const consumeForm=new FormData();consumeForm.append('documentId',job.documentId);consumeForm.append('mapping',JSON.stringify(job.mapping));
+          const consumeResponse=await fetch('/api/safedocs/consume-local-key',{method:'POST',body:consumeForm});
+          if(!consumeResponse.ok)throw new Error((await consumeResponse.text())||`Could not update Tester1.txt after restoring ${job.file.name}.`);
+          const consumeResult=await consumeResponse.json();if(!consumeResult.deleted)throw new Error(`The mapping for ${job.file.name} changed and was kept.`);
+          consumedDocuments.add(job.documentId);
         }
+        await loadDesktopKey();
+        document.getElementById('keyState').textContent=`Restored ${restoredJobs.length} file(s); their mappings were removed from Tester1.txt.`;
+        showSuccess(`${restoredJobs.length} report(s) restored. Their mappings were removed.`);
       }catch(error){showError(error.message||'Could not read the selected report PDF.')}
     });
     document.getElementById('downloadRestored').addEventListener('click',async()=>{
